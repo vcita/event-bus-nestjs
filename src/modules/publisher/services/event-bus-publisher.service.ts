@@ -1,13 +1,11 @@
-import { Injectable, Optional, Inject } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable } from '@nestjs/common';
 import { InfraLoggerService } from '@vcita/infra-nestjs';
 import { Options } from 'amqplib';
-import { PublishEventOptions } from '../interfaces/event.interface';
+import { PublishEventOptions } from 'src/interfaces/event.interface';
+import { EventBusConfigService } from 'src/services/event-bus-config.service';
 import { AmqpConnectionService } from './amqp-connection.service';
 import { EventBuilder } from '../utils/event-builder.util';
 import { TraceUtil } from '../utils/trace.util';
-import { EventBusConfig } from '../interfaces/event-bus-config.interface';
-import { EVENT_BUS_CONFIG } from '../constants';
 
 /**
  * Service for publishing events to the event bus
@@ -16,26 +14,10 @@ import { EVENT_BUS_CONFIG } from '../constants';
 export class EventBusPublisher<T = unknown> {
   private readonly logger = new InfraLoggerService(EventBusPublisher.name);
 
-  private readonly config: EventBusConfig;
-
   constructor(
     private readonly amqpConnection: AmqpConnectionService,
-    @Optional() configService?: ConfigService,
-    @Optional() @Inject(EVENT_BUS_CONFIG) directConfig?: EventBusConfig,
-  ) {
-    if (directConfig) {
-      this.config = directConfig;
-    } else if (configService) {
-      this.config = {
-        rabbitmqDsn: configService.get<string>('eventBus.rabbitmqDsn'),
-        sourceService: configService.get<string>('eventBus.sourceService'),
-        exchangeName: configService.get<string>('eventBus.exchangeName'),
-        defaultDomain: configService.get<string>('eventBus.defaultDomain'),
-      };
-    } else {
-      throw new Error('Either ConfigService or EventBusConfig must be provided');
-    }
-  }
+    private readonly eventBusConfigService: EventBusConfigService,
+  ) {}
 
   /**
    * Publishes an event to the event bus
@@ -82,8 +64,9 @@ export class EventBusPublisher<T = unknown> {
       EventBusPublisher.validatePublishOptions(options);
 
       const traceId = TraceUtil.getOrGenerateTraceId();
-      const event = EventBuilder.buildEvent(options, this.config.sourceService, traceId);
-      const domain = options.domain || this.config.defaultDomain;
+      const config = this.eventBusConfigService.getConfig();
+      const event = EventBuilder.buildEvent(options, config.sourceService, traceId);
+      const domain = options.domain || config.defaultDomain;
       const routingKey = EventBuilder.buildRoutingKey(
         domain,
         options.entityType,
@@ -92,7 +75,7 @@ export class EventBusPublisher<T = unknown> {
 
       this.logger.debug(
         `Publishing event ${event.headers.event_uid} to exchange ` +
-          `${this.config.exchangeName} with routing key ${routingKey}`,
+          `${config.exchangeName} with routing key ${routingKey}`,
       );
 
       const channelWrapper = this.amqpConnection.getChannelWrapper();
@@ -102,12 +85,7 @@ export class EventBusPublisher<T = unknown> {
         persistent: true,
       };
 
-      await channelWrapper.publish(
-        this.config.exchangeName,
-        routingKey,
-        event.payload,
-        publishOptions,
-      );
+      await channelWrapper.publish(config.exchangeName, routingKey, event.payload, publishOptions);
 
       const duration = Date.now() - startTime;
       this.logger.debug(`Event published successfully: ${event.headers.event_uid} (${duration}ms)`);

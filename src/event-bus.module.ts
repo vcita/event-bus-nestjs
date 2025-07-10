@@ -1,6 +1,5 @@
 import { DynamicModule, Module } from '@nestjs/common';
-import { AmqpConnectionService } from './services/amqp-connection.service';
-import { EventBusPublisher } from './services/event-bus-publisher.service';
+import { PublisherModule } from './modules/publisher/publisher.module';
 import { EventBusConfig } from './interfaces/event-bus-config.interface';
 import { EVENT_BUS_CONFIG } from './constants';
 
@@ -8,8 +7,8 @@ import { EVENT_BUS_CONFIG } from './constants';
  * Module providing event bus functionality for publishing events
  */
 @Module({
-  providers: [AmqpConnectionService, EventBusPublisher],
-  exports: [EventBusPublisher],
+  imports: [PublisherModule],
+  exports: [PublisherModule],
 })
 export class EventBusModule {
   /**
@@ -18,15 +17,14 @@ export class EventBusModule {
   static forRoot(config: EventBusConfig): DynamicModule {
     return {
       module: EventBusModule,
+      imports: [PublisherModule],
       providers: [
         {
           provide: EVENT_BUS_CONFIG,
           useValue: config,
         },
-        AmqpConnectionService,
-        EventBusPublisher,
       ],
-      exports: [EventBusPublisher],
+      exports: [PublisherModule],
     };
   }
 }

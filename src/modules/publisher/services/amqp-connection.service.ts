@@ -1,9 +1,7 @@
-import { Injectable, OnModuleDestroy, OnModuleInit, Optional, Inject } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InfraLoggerService } from '@vcita/infra-nestjs';
 import amqp, { AmqpConnectionManager, ChannelWrapper } from 'amqp-connection-manager';
-import { EventBusConfig } from '../interfaces/event-bus-config.interface';
-import { EVENT_BUS_CONFIG } from '../constants';
+import { EventBusConfigService } from 'src/services/event-bus-config.service';
 
 const MOCKED_CHANNEL_WRAPPER: ChannelWrapper = {
   publish: async () => {
@@ -22,25 +20,7 @@ export class AmqpConnectionService implements OnModuleInit, OnModuleDestroy {
 
   private channelWrapper: ChannelWrapper;
 
-  private config: EventBusConfig;
-
-  constructor(
-    @Optional() private readonly configService?: ConfigService,
-    @Optional() @Inject(EVENT_BUS_CONFIG) private readonly directConfig?: EventBusConfig,
-  ) {
-    if (directConfig) {
-      this.config = directConfig;
-    } else if (configService) {
-      this.config = {
-        rabbitmqDsn: configService.get<string>('eventBus.rabbitmqDsn'),
-        sourceService: configService.get<string>('eventBus.sourceService'),
-        exchangeName: configService.get<string>('eventBus.exchangeName'),
-        defaultDomain: configService.get<string>('eventBus.defaultDomain'),
-      };
-    } else {
-      throw new Error('Either ConfigService or EventBusConfig must be provided');
-    }
-  }
+  constructor(private readonly eventBusConfigService: EventBusConfigService) {}
 
   async onModuleInit(): Promise<void> {
     if (process.env.NODE_ENV === 'test') {
@@ -49,7 +29,7 @@ export class AmqpConnectionService implements OnModuleInit, OnModuleDestroy {
 
     this.logger.debug('Initializing persistent AMQP connection');
 
-    const { rabbitmqDsn, exchangeName } = this.config;
+    const { rabbitmqDsn, exchangeName } = this.eventBusConfigService.getConfig();
     if (!rabbitmqDsn) {
       throw new Error('RABBITMQ_DSN configuration is required');
     }

@@ -5,7 +5,7 @@ import {
   EventHeaders,
   EventPayload,
   PublishEventOptions,
-} from '../interfaces/event.interface';
+} from 'src/interfaces/event.interface';
 
 /**
  * Utility class for building events and routing keys
