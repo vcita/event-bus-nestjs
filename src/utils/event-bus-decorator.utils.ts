@@ -1,7 +1,7 @@
 import { applyDecorators, UseFilters, UseInterceptors, SetMetadata } from '@nestjs/common';
 import { RabbitSubscribe, RabbitHandlerConfig } from '@golevelup/nestjs-rabbitmq';
 import { ExcludeDtoValidation, UnwrappedResponse, InfraLoggerService } from '@vcita/infra-nestjs';
-import { EventBusExceptionFilter } from '../subsriber/filters/event-bus-exception.filter';
+import { EventBusExceptionFilter } from '../filters/event-bus-exception.filter';
 import { assertSubscriberRetryInfrastructure } from './queue-management';
 import {
   EventBusSubscriberMetadata,
