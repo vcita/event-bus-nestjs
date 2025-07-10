@@ -6,17 +6,17 @@ import { InfraLoggerService, LogLevelEnum } from '@vcita/infra-nestjs';
 import { ContextStore, runWithCtx } from '@vcita/infra-nestjs/dist/infra/utils/context-store.utils';
 import { isRabbitContext } from '@golevelup/nestjs-rabbitmq';
 import { ConfigService } from '@nestjs/config';
-import { EventHeaders, EventPayload } from '../../interfaces/event.interface';
+import { EventHeaders, EventPayload } from '../../../interfaces/event.interface';
 import {
   EventData,
   EventBusSubscriberMetadata,
   EVENT_BUS_SUBSCRIBER_METADATA_KEY,
-} from '../../interfaces/subscription.interface';
+} from '../../../interfaces/subscription.interface';
 import {
   EventBusMetricsService,
   ValidationFailureType,
 } from '../services/event-bus-metrics.service';
-import { NonRetryableError, RetryError } from '../../utils/event-retry-handler';
+import { NonRetryableError, RetryError } from '../../../utils/event-retry-handler';
 
 @Injectable()
 export class EventBusProcessingInterceptor implements NestInterceptor {

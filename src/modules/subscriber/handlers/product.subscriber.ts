@@ -3,8 +3,8 @@ import { AuthorizationPayloadEntity } from '@vcita/oauth-client-nestjs';
 import { InfraLoggerService } from '@vcita/infra-nestjs';
 import { SubscribeTo } from '../decorators/subscribe-to.decorator';
 import { LegacySubscribeTo } from '../decorators/legacy-subscribe-to.decorator';
-import { EventHeaders, EventPayload } from '../../interfaces/event.interface';
-import { NonRetryableError } from '../../utils/event-retry-handler';
+import { EventHeaders, EventPayload } from '../../../interfaces/event.interface';
+import { NonRetryableError } from '../../../utils/event-retry-handler';
 
 @Injectable()
 export class ProductSubscriber {

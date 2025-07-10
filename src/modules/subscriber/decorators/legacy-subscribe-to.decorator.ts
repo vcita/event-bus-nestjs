@@ -3,10 +3,10 @@ import { InfraLoggerService } from '@vcita/infra-nestjs';
 import {
   LegacySubscribeToOptions,
   EventBusSubscriberMetadata,
-} from '../../interfaces/subscription.interface';
-import { createEventRetryHandler } from '../../utils/event-retry-handler';
+} from '../../../interfaces/subscription.interface';
+import { createEventRetryHandler } from '../../../utils/event-retry-handler';
 import configuration from '../configuration';
-import { EventBusDecoratorUtils } from '../../utils/event-bus-decorator.utils';
+import { EventBusDecoratorUtils } from '../../../utils/event-bus-decorator.utils';
 
 /**
  * Decorator for subscribing to legacy event bus messages without domain/entity/action classification.

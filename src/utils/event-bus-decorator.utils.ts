@@ -7,7 +7,7 @@ import {
   EventBusSubscriberMetadata,
   EVENT_BUS_SUBSCRIBER_METADATA_KEY,
 } from '../interfaces/subscription.interface';
-import { EventBusProcessingInterceptor } from '../subsriber/interceptors/event-bus-processing.interceptor';
+import { EventBusProcessingInterceptor } from '../modules/subscriber/interceptors/event-bus-processing.interceptor';
 
 export class EventBusDecoratorUtils {
   /**

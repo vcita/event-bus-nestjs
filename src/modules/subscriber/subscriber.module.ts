@@ -80,6 +80,5 @@ import { EventBusMetricsService } from './services/event-bus-metrics.service';
       ],
     }),
   ],
-  exports: [RabbitMQModule, EventBusProcessingInterceptor, EventBusMetricsService],
 })
-export class EventBusModule {}
+export class SubscriberModule {}

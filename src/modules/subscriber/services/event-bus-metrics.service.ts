@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { getToken } from '@willsoto/nestjs-prometheus';
 import { Counter, Histogram } from 'prom-client';
-import { EventBusSubscriberMetadata } from '../../interfaces/subscription.interface';
+import { EventBusSubscriberMetadata } from '../../../interfaces/subscription.interface';
 
 export type EventStatus =
   | 'received'

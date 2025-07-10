@@ -2,14 +2,14 @@ import { ConsumeMessage } from 'amqplib';
 import { InfraLoggerService } from '@vcita/infra-nestjs';
 import { ActorEntity, AuthorizationPayloadEntity } from '@vcita/oauth-client-nestjs';
 import { plainToActor } from '@vcita/oauth-client-nestjs/dist/oauth/utils/plain-to-class.utils';
-import { EventPayload } from '../../interfaces/event.interface';
+import { EventPayload } from '../../../interfaces/event.interface';
 import {
   SubscribeToOptions,
   EventBusSubscriberMetadata,
-} from '../../interfaces/subscription.interface';
-import { createEventRetryHandler } from '../../utils/event-retry-handler';
+} from '../../../interfaces/subscription.interface';
+import { createEventRetryHandler } from '../../../utils/event-retry-handler';
 import configuration from '../configuration';
-import { EventBusDecoratorUtils } from '../../utils/event-bus-decorator.utils';
+import { EventBusDecoratorUtils } from '../../../utils/event-bus-decorator.utils';
 
 /**
  * Thin decorator for subscribing to event bus messages with standardized routing.
