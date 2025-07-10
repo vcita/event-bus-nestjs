@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getToken } from '@willsoto/nestjs-prometheus';
-import { EventBusMetricsService } from './event-bus-metrics.service';
 import { Counter, Histogram } from 'prom-client';
+import { EventBusMetricsService } from './event-bus-metrics.service';
 
 describe('EventBusMetricsService', () => {
   let service: EventBusMetricsService;
@@ -71,7 +71,7 @@ describe('EventBusMetricsService', () => {
   describe('recordEventStatus', () => {
     it('should record event status with labels from metadata when routing key cannot be parsed', () => {
       const routingKey = 'availability.slot.created';
-      
+
       service.recordEventStatus('processed', mockMetadata, routingKey);
 
       expect(eventsCounter.inc).toHaveBeenCalledWith({
@@ -173,7 +173,7 @@ describe('EventBusMetricsService', () => {
   describe('startProcessingTimer', () => {
     it('should return a function that records processing duration using metadata when routing key cannot be parsed', () => {
       const routingKey = 'availability.slot.created';
-      
+
       // Simulate some processing time
       const dateNowSpy = jest
         .spyOn(Date, 'now')

@@ -67,6 +67,7 @@ export function LegacySubscribeTo(options: LegacySubscribeToOptions) {
   return function (targetClass: any, methodName: string, descriptor: PropertyDescriptor) {
     const originalEventHandler = descriptor.value;
 
+    /* eslint-disable-next-line no-param-reassign */
     descriptor.value = async function (payload: unknown, amqpMsg: ConsumeMessage): Promise<void> {
       const headers = amqpMsg.properties.headers || {};
       return originalEventHandler.call(this, payload, headers);

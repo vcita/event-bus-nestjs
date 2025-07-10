@@ -12,7 +12,7 @@ export interface BaseSubscribeToOptions {
   retry?: RetryOptions;
 }
 
-export type StringWithWildcard = '*' | '#' | (string & {});
+export type StringWithWildcard = '*' | '#' | string;
 
 export interface SubscribeToOptions extends BaseSubscribeToOptions {
   domain: StringWithWildcard;

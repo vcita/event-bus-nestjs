@@ -14,26 +14,26 @@ export async function assertSubscriberRetryInfrastructure(
   errorQueueOptions: Record<string, any>,
 ): Promise<void> {
   const connection = connect([rabbitmqDsn]);
-  
+
   const channelWrapper: ChannelWrapper = connection.createChannel({
     setup: async (channel: ConfirmChannel) => {
       channel.once('error', (err) => {
         logger.error(`Channel error: ${err.message}`, err);
       });
-      
+
       logger.debug(`Asserting retry infrastructure for subscriber: ${queueConfig.queueName}`);
       // Assert retry exchange
       await channel.assertExchange(queueConfig.retryExchangeName, 'topic', { durable: true });
       logger.debug(`Retry exchange ${queueConfig.retryExchangeName} asserted`);
-      
+
       // Assert retry queue
       await channel.assertQueue(queueConfig.retryQueueName, retryQueueOptions);
       logger.debug(`Retry queue ${queueConfig.retryQueueName} asserted`);
-      
+
       // Bind retry queue to retry exchange
       await channel.bindQueue(queueConfig.retryQueueName, queueConfig.retryExchangeName, '#');
       logger.debug(`Retry queue bound to retry exchange`);
-      
+
       // Assert requeue exchange
       await channel.assertExchange(queueConfig.requeueExchangeName, 'topic', { durable: true });
       logger.debug(`Requeue exchange ${queueConfig.requeueExchangeName} asserted`);
@@ -43,19 +43,27 @@ export async function assertSubscriberRetryInfrastructure(
       logger.debug(`Main queue ${queueConfig.queueName} asserted`);
 
       // Bind main queue to requeue exchange
-      await channel.bindQueue(queueConfig.queueName, queueConfig.requeueExchangeName, queueConfig.routingKey);
+      await channel.bindQueue(
+        queueConfig.queueName,
+        queueConfig.requeueExchangeName,
+        queueConfig.routingKey,
+      );
       logger.debug(`Main queue bound to requeue exchange`);
-      
+
       // Assert error exchange
       await channel.assertExchange(queueConfig.errorExchangeName, 'topic', { durable: true });
       logger.debug(`Error exchange ${queueConfig.errorExchangeName} asserted`);
-      
+
       // Assert error queue
       await channel.assertQueue(queueConfig.errorQueueName, errorQueueOptions);
       logger.debug(`Error queue ${queueConfig.errorQueueName} asserted`);
-      
+
       // Bind error queue to error exchange
-      await channel.bindQueue(queueConfig.errorQueueName, queueConfig.errorExchangeName, queueConfig.routingKey);
+      await channel.bindQueue(
+        queueConfig.errorQueueName,
+        queueConfig.errorExchangeName,
+        queueConfig.routingKey,
+      );
       logger.debug(`Error queue bound to error exchange`);
 
       logger.debug(`Infrastructure setup completed for subscriber: ${queueConfig.queueName}`);

@@ -1,10 +1,14 @@
+/* eslint-disable max-classes-per-file */
 import { ConsumeMessage, Channel } from 'amqplib';
 import { InfraLoggerService } from '@vcita/infra-nestjs';
 
 class EventError extends Error {
   eventUid?: string;
+
   attemptNumber?: number;
+
   shouldRetry: boolean;
+
   originalError?: Error;
 
   constructor(message: string) {
@@ -54,14 +58,19 @@ export const RetryHeaders = {
  * - RetryError instances get requeued for retry with updated headers
  * - All other errors get sent to error exchange
  */
-export function createEventRetryHandler(logger: InfraLoggerService, queueConfig: Record<string, any>) {
+export function createEventRetryHandler(
+  logger: InfraLoggerService,
+  queueConfig: Record<string, any>,
+) {
   return async (channel: Channel, msg: ConsumeMessage, error: Error): Promise<void> => {
     const eventUid = msg.properties.headers?.event_uid || 'unknown';
 
     try {
       if (error instanceof EventError && error.shouldRetry) {
         // Retry the message - NACK to route via DLX to retry exchange
-        logger.log(`Requeuing event ${eventUid} for retry (attempt ${error.attemptNumber}) via NACK to retry exchange`);
+        logger.log(
+          `Requeuing event ${eventUid} for retry (attempt ${error.attemptNumber}) via NACK to retry exchange`,
+        );
         channel.nack(msg, false, false);
       } else {
         logger.warn(`Sending event ${eventUid} to error exchange: ${error.message}`);
@@ -108,7 +117,6 @@ async function publishToErrorExchange(
     {
       ...originalMsg.properties,
       headers: errorHeaders,
-    }
+    },
   );
 }
-

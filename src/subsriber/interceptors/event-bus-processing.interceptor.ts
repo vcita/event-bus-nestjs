@@ -47,15 +47,19 @@ export class EventBusProcessingInterceptor implements NestInterceptor {
     next: CallHandler,
     amqpMsg: ConsumeMessage,
   ): Observable<any> {
-    const loggerContext = this.getLoggerContext(headers, metadata);
-    const routingKey = amqpMsg.fields.routingKey;
+    const loggerContext = EventBusProcessingInterceptor.getLoggerContext(headers, metadata);
+    const { routingKey } = amqpMsg.fields;
     const eventUid = headers.event_uid || 'unknown';
 
     return runWithCtx(async () => {
       try {
         this.metricsService.recordEventStatus('received', metadata, routingKey);
 
-        const validationFailure = this.validateEvent(event, headers, metadata);
+        const validationFailure = EventBusProcessingInterceptor.validateEvent(
+          event,
+          headers,
+          metadata,
+        );
         if (validationFailure) {
           this.logger.infraLog(`Event is invalid, nacking`, '', LogLevelEnum.WARN, {
             event,
@@ -104,7 +108,7 @@ export class EventBusProcessingInterceptor implements NestInterceptor {
     return metadata;
   }
 
-  private validateEvent(
+  private static validateEvent(
     event: EventData,
     headers: EventHeaders | Record<string, any>,
     metadata: EventBusSubscriberMetadata,
@@ -127,7 +131,7 @@ export class EventBusProcessingInterceptor implements NestInterceptor {
     return null;
   }
 
-  private getLoggerContext(
+  private static getLoggerContext(
     headers: EventHeaders | Record<string, any>,
     metadata: EventBusSubscriberMetadata,
   ) {
@@ -162,7 +166,7 @@ export class EventBusProcessingInterceptor implements NestInterceptor {
       return throwError(error);
     }
 
-    const attemptNumber = this.getCurrentAttemptCount(amqpMsg);
+    const attemptNumber = EventBusProcessingInterceptor.getCurrentAttemptCount(amqpMsg);
     const maxRetries =
       metadata.options.retry?.count ?? this.configService.get('eventBus.retry.defaultMaxRetries');
 
@@ -191,7 +195,7 @@ export class EventBusProcessingInterceptor implements NestInterceptor {
    * @param amqpMsg - The AMQP message
    * @returns The current message attempt count, including the initial attempt
    */
-  private getCurrentAttemptCount(amqpMsg: ConsumeMessage): number {
+  private static getCurrentAttemptCount(amqpMsg: ConsumeMessage): number {
     // RabbitMQ's x-death header: Array tracking each dead-letter event for this message
     // Each entry contains: { queue, reason, time, exchange, routing-keys, count }
     const deadLetterHistory = amqpMsg.properties.headers?.['x-death'] || [];

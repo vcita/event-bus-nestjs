@@ -75,6 +75,7 @@ export function SubscribeTo(options: SubscribeToOptions) {
   return function (targetClass: any, methodName: string, descriptor: PropertyDescriptor) {
     const originalEventHandler = descriptor.value;
 
+    /* eslint-disable-next-line no-param-reassign */
     descriptor.value = async function (
       event: EventPayload<unknown>,
       amqpMsg: ConsumeMessage,

@@ -34,13 +34,13 @@ export class EventBusMetricsService {
     metadata: EventBusSubscriberMetadata,
     routingKey: string,
   ): void {
-    const { domain, entity, action } = this.getActualDomainEntityAction(metadata, routingKey);
+    const eventMetadata = EventBusMetricsService.getActualDomainEntityAction(metadata, routingKey);
     const labels = {
       status,
       event_type: metadata.eventType,
-      domain,
-      entity,
-      action,
+      domain: eventMetadata.domain,
+      entity: eventMetadata.entity,
+      action: eventMetadata.action,
       queue_name: metadata.queueName,
       routing_key: routingKey,
     };
@@ -53,13 +53,13 @@ export class EventBusMetricsService {
     metadata: EventBusSubscriberMetadata,
     routingKey: string,
   ): void {
-    const { domain, entity, action } = this.getActualDomainEntityAction(metadata, routingKey);
+    const eventMetadata = EventBusMetricsService.getActualDomainEntityAction(metadata, routingKey);
     const labels = {
       failure_type: failureType,
       event_type: metadata.eventType,
-      domain,
-      entity,
-      action,
+      domain: eventMetadata.domain,
+      entity: eventMetadata.entity,
+      action: eventMetadata.action,
       queue_name: metadata.queueName,
       routing_key: routingKey,
     };
@@ -83,12 +83,12 @@ export class EventBusMetricsService {
     metadata: EventBusSubscriberMetadata,
     routingKey: string,
   ): void {
-    const { domain, entity, action } = this.getActualDomainEntityAction(metadata, routingKey);
+    const eventMetadata = EventBusMetricsService.getActualDomainEntityAction(metadata, routingKey);
     const labels = {
       event_type: metadata.eventType,
-      domain,
-      entity,
-      action,
+      domain: eventMetadata.domain,
+      entity: eventMetadata.entity,
+      action: eventMetadata.action,
       queue_name: metadata.queueName,
       routing_key: routingKey,
     };
@@ -96,12 +96,12 @@ export class EventBusMetricsService {
     this.processingDurationHistogram.observe(labels, duration);
   }
 
-  private getActualDomainEntityAction(
+  private static getActualDomainEntityAction(
     metadata: EventBusSubscriberMetadata,
     routingKey: string,
   ): ParsedRoutingKey {
     if (metadata.eventType === 'standard') {
-      const parsed = this.parseRoutingKey(routingKey);
+      const parsed = EventBusMetricsService.parseRoutingKey(routingKey);
       if (parsed) {
         return parsed;
       }
@@ -113,17 +113,16 @@ export class EventBusMetricsService {
         entity: entity ?? 'unknown',
         action: action ?? 'unknown',
       };
-    } else {
-      // Legacy events don't have domain/entity/action - use unknown
-      return {
-        domain: 'unknown',
-        entity: 'unknown',
-        action: 'unknown',
-      };
     }
+    // Legacy events don't have domain/entity/action - use unknown
+    return {
+      domain: 'unknown',
+      entity: 'unknown',
+      action: 'unknown',
+    };
   }
 
-  private parseRoutingKey(routingKey: string): ParsedRoutingKey | null {
+  private static parseRoutingKey(routingKey: string): ParsedRoutingKey | null {
     const parts = routingKey.split('.');
     if (parts.length >= 3) {
       const [domain, entity, ...actionParts] = parts;
