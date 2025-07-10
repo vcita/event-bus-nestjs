@@ -6,13 +6,12 @@ import { InfraLoggerService, LogLevelEnum } from '@vcita/infra-nestjs';
 import { ContextStore, runWithCtx } from '@vcita/infra-nestjs/dist/infra/utils/context-store.utils';
 import { isRabbitContext } from '@golevelup/nestjs-rabbitmq';
 import { ConfigService } from '@nestjs/config';
+import { EventHeaders, EventPayload } from '../../interfaces/event.interface';
 import {
-  EventHeaders,
-  EventPayload,
   EventData,
-  EventBusMetadata,
-  EVENT_BUS_METADATA_KEY,
-} from '../interfaces/event.interface';
+  EventBusSubscriberMetadata,
+  EVENT_BUS_SUBSCRIBER_METADATA_KEY,
+} from '../../interfaces/subscription.interface';
 import {
   EventBusMetricsService,
   ValidationFailureType,
@@ -44,7 +43,7 @@ export class EventBusProcessingInterceptor implements NestInterceptor {
   private processEvent(
     event: EventData,
     headers: EventHeaders | Record<string, any>,
-    metadata: EventBusMetadata,
+    metadata: EventBusSubscriberMetadata,
     next: CallHandler,
     amqpMsg: ConsumeMessage,
   ): Observable<any> {
@@ -91,13 +90,16 @@ export class EventBusProcessingInterceptor implements NestInterceptor {
     }, loggerContext);
   }
 
-  private getEventBusMetadata(context: ExecutionContext): EventBusMetadata | null {
+  private getEventBusMetadata(context: ExecutionContext): EventBusSubscriberMetadata | null {
     if (!isRabbitContext(context)) {
       return null;
     }
 
     const handler = context.getHandler();
-    const metadata = this.reflector.get<EventBusMetadata>(EVENT_BUS_METADATA_KEY, handler);
+    const metadata = this.reflector.get<EventBusSubscriberMetadata>(
+      EVENT_BUS_SUBSCRIBER_METADATA_KEY,
+      handler,
+    );
 
     return metadata;
   }
@@ -105,7 +107,7 @@ export class EventBusProcessingInterceptor implements NestInterceptor {
   private validateEvent(
     event: EventData,
     headers: EventHeaders | Record<string, any>,
-    metadata: EventBusMetadata,
+    metadata: EventBusSubscriberMetadata,
   ): ValidationFailureType | null {
     if (metadata.eventType === 'legacy') {
       // Legacy events: no validation required - they can have any payload and headers
@@ -127,7 +129,7 @@ export class EventBusProcessingInterceptor implements NestInterceptor {
 
   private getLoggerContext(
     headers: EventHeaders | Record<string, any>,
-    metadata: EventBusMetadata,
+    metadata: EventBusSubscriberMetadata,
   ) {
     const context = ContextStore.getContext();
     const baseContext = {
@@ -149,7 +151,7 @@ export class EventBusProcessingInterceptor implements NestInterceptor {
   private handleRetry(
     amqpMsg: ConsumeMessage,
     error: any,
-    metadata: EventBusMetadata,
+    metadata: EventBusSubscriberMetadata,
     routingKey: string,
   ): Observable<never> {
     const eventUid = amqpMsg.properties.headers?.event_uid || 'unknown';

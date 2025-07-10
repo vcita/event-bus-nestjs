@@ -2,7 +2,7 @@ import { Injectable, OnModuleDestroy, OnModuleInit, Optional, Inject } from '@ne
 import { ConfigService } from '@nestjs/config';
 import { InfraLoggerService } from '@vcita/infra-nestjs';
 import amqp, { AmqpConnectionManager, ChannelWrapper } from 'amqp-connection-manager';
-import { EventBusConfig } from '../interfaces/config.interface';
+import { EventBusConfig } from '../interfaces/event-bus-config.interface';
 import { EVENT_BUS_CONFIG } from '../constants';
 
 const MOCKED_CHANNEL_WRAPPER: ChannelWrapper = {

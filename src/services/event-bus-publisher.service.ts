@@ -6,7 +6,7 @@ import { PublishEventOptions } from '../interfaces/event.interface';
 import { AmqpConnectionService } from './amqp-connection.service';
 import { EventBuilder } from '../utils/event-builder.util';
 import { TraceUtil } from '../utils/trace.util';
-import { EventBusConfig } from '../interfaces/config.interface';
+import { EventBusConfig } from '../interfaces/event-bus-config.interface';
 import { EVENT_BUS_CONFIG } from '../constants';
 
 /**

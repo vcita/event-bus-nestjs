@@ -2,9 +2,13 @@ import { ConsumeMessage } from 'amqplib';
 import { InfraLoggerService } from '@vcita/infra-nestjs';
 import { ActorEntity, AuthorizationPayloadEntity } from '@vcita/oauth-client-nestjs';
 import { plainToActor } from '@vcita/oauth-client-nestjs/dist/oauth/utils/plain-to-class.utils';
-import { EventPayload, SubscribeToOptions, EventBusMetadata } from '../interfaces/event.interface';
+import { EventPayload } from '../../interfaces/event.interface';
+import {
+  SubscribeToOptions,
+  EventBusSubscriberMetadata,
+} from '../../interfaces/subscription.interface';
 import { createEventRetryHandler } from '../utils/event-retry-handler';
-import configuration from '../../config/configuration';
+import configuration from '../configuration';
 import { EventBusDecoratorUtils } from '../utils/event-bus-decorator.utils';
 
 /**
@@ -83,7 +87,7 @@ export function SubscribeTo(options: SubscribeToOptions) {
       return originalEventHandler.call(this, auth, event, headers);
     };
 
-    const metadata: EventBusMetadata = {
+    const metadata: EventBusSubscriberMetadata = {
       eventType: 'standard',
       queueName: queueConfig.queueName,
       options,

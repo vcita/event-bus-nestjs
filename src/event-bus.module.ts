@@ -1,7 +1,7 @@
 import { DynamicModule, Module } from '@nestjs/common';
 import { AmqpConnectionService } from './services/amqp-connection.service';
 import { EventBusPublisher } from './services/event-bus-publisher.service';
-import { EventBusConfig } from './interfaces/config.interface';
+import { EventBusConfig } from './interfaces/event-bus-config.interface';
 import { EVENT_BUS_CONFIG } from './constants';
 
 /**

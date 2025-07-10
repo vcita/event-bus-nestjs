@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { getToken } from '@willsoto/nestjs-prometheus';
 import { Counter, Histogram } from 'prom-client';
-import { EventBusMetadata } from '../interfaces/event.interface';
+import { EventBusSubscriberMetadata } from '../../interfaces/subscription.interface';
 
 export type EventStatus =
   | 'received'
@@ -29,7 +29,11 @@ export class EventBusMetricsService {
   @Inject(getToken('eventbus_validation_failures_total'))
   private readonly validationFailuresCounter: Counter<string>;
 
-  recordEventStatus(status: EventStatus, metadata: EventBusMetadata, routingKey: string): void {
+  recordEventStatus(
+    status: EventStatus,
+    metadata: EventBusSubscriberMetadata,
+    routingKey: string,
+  ): void {
     const { domain, entity, action } = this.getActualDomainEntityAction(metadata, routingKey);
     const labels = {
       status,
@@ -46,7 +50,7 @@ export class EventBusMetricsService {
 
   recordValidationFailure(
     failureType: ValidationFailureType,
-    metadata: EventBusMetadata,
+    metadata: EventBusSubscriberMetadata,
     routingKey: string,
   ): void {
     const { domain, entity, action } = this.getActualDomainEntityAction(metadata, routingKey);
@@ -65,7 +69,7 @@ export class EventBusMetricsService {
   }
 
   /** Returns a function to call when processing completes to record duration */
-  startProcessingTimer(metadata: EventBusMetadata, routingKey: string): () => void {
+  startProcessingTimer(metadata: EventBusSubscriberMetadata, routingKey: string): () => void {
     const startTime = Date.now();
 
     return () => {
@@ -76,7 +80,7 @@ export class EventBusMetricsService {
 
   private recordProcessingDuration(
     duration: number,
-    metadata: EventBusMetadata,
+    metadata: EventBusSubscriberMetadata,
     routingKey: string,
   ): void {
     const { domain, entity, action } = this.getActualDomainEntityAction(metadata, routingKey);
@@ -93,7 +97,7 @@ export class EventBusMetricsService {
   }
 
   private getActualDomainEntityAction(
-    metadata: EventBusMetadata,
+    metadata: EventBusSubscriberMetadata,
     routingKey: string,
   ): ParsedRoutingKey {
     if (metadata.eventType === 'standard') {

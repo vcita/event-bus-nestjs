@@ -1,11 +1,6 @@
 import { BaseActor } from '@vcita/oauth-client-nestjs/dist/oauth/interfaces/actor.interface';
 import { ActorEntity } from '@vcita/oauth-client-nestjs';
 
-/**
- * Actor information for event tracking
- */
-export type EventType = 'created' | 'updated' | 'deleted' | string;
-
 export type Actor = BaseActor & Partial<ActorEntity>;
 
 /**
@@ -37,6 +32,8 @@ export interface Event<T = unknown> {
   headers: EventHeaders;
   payload: EventPayload<T>;
 }
+
+export type EventType = 'created' | 'updated' | 'deleted' | string;
 
 /**
  * Options for publishing events

@@ -14,4 +14,4 @@ export {
 } from './interfaces/event.interface';
 
 // Type exports
-export { EventBusConfig } from './interfaces/config.interface';
+export { EventBusConfig } from './interfaces/event-bus-config.interface';

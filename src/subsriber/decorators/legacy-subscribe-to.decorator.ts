@@ -1,8 +1,11 @@
 import { ConsumeMessage } from 'amqplib';
 import { InfraLoggerService } from '@vcita/infra-nestjs';
-import { LegacySubscribeToOptions, EventBusMetadata } from '../interfaces/event.interface';
+import {
+  LegacySubscribeToOptions,
+  EventBusSubscriberMetadata,
+} from '../../interfaces/subscription.interface';
 import { createEventRetryHandler } from '../utils/event-retry-handler';
-import configuration from '../../config/configuration';
+import configuration from '../configuration';
 import { EventBusDecoratorUtils } from '../utils/event-bus-decorator.utils';
 
 /**
@@ -69,7 +72,7 @@ export function LegacySubscribeTo(options: LegacySubscribeToOptions) {
       return originalEventHandler.call(this, payload, headers);
     };
 
-    const metadata: EventBusMetadata = {
+    const metadata: EventBusSubscriberMetadata = {
       eventType: 'legacy',
       queueName: queueConfig.queueName,
       options,
@@ -101,9 +104,7 @@ function buildLegacyEventBusConfig() {
 }
 
 function buildLegacyQueueConfig(options: LegacySubscribeToOptions, eventBusConfig: any) {
-  const queueName =
-    options.queue ||
-    `legacy.${eventBusConfig.appName}.${options.routingKey}`;
+  const queueName = options.queue || `legacy.${eventBusConfig.appName}.${options.routingKey}`;
 
   return {
     routingKey: options.routingKey,

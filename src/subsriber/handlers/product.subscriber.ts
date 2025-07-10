@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { SubscribeTo } from '../decorators/subscribe-to.decorator';
 import { LegacySubscribeTo } from '../decorators/legacy-subscribe-to.decorator';
-import { EventHeaders, EventPayload } from '../interfaces/event.interface';
+import { EventHeaders, EventPayload } from '../../interfaces/event.interface';
 import { AuthorizationPayloadEntity } from '@vcita/oauth-client-nestjs';
 import { InfraLoggerService } from '@vcita/infra-nestjs';
 import { NonRetryableError } from '../utils/event-retry-handler';

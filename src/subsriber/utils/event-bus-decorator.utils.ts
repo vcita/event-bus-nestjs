@@ -3,7 +3,10 @@ import { RabbitSubscribe, RabbitHandlerConfig } from '@golevelup/nestjs-rabbitmq
 import { ExcludeDtoValidation, UnwrappedResponse, InfraLoggerService } from '@vcita/infra-nestjs';
 import { EventBusExceptionFilter } from '../filters/event-bus-exception.filter';
 import { assertSubscriberRetryInfrastructure } from './queue-management';
-import { EventBusMetadata, EVENT_BUS_METADATA_KEY } from '../interfaces/event.interface';
+import {
+  EventBusSubscriberMetadata,
+  EVENT_BUS_SUBSCRIBER_METADATA_KEY,
+} from '../../interfaces/subscription.interface';
 import { EventBusProcessingInterceptor } from '../interceptors/event-bus-processing.interceptor';
 
 export class EventBusDecoratorUtils {
@@ -62,11 +65,11 @@ export class EventBusDecoratorUtils {
    * Applies common decorators used by both standard and legacy subscribers
    */
   static applyCommonDecorators(
-    metadata: EventBusMetadata,
+    metadata: EventBusSubscriberMetadata,
     rabbitConfig: Partial<RabbitHandlerConfig>,
   ) {
     return applyDecorators(
-      SetMetadata(EVENT_BUS_METADATA_KEY, metadata),
+      SetMetadata(EVENT_BUS_SUBSCRIBER_METADATA_KEY, metadata),
       RabbitSubscribe(rabbitConfig),
       UseInterceptors(EventBusProcessingInterceptor),
       ExcludeDtoValidation(),
