@@ -16,7 +16,7 @@ import {
   EventBusMetricsService,
   ValidationFailureType,
 } from '../services/event-bus-metrics.service';
-import { NonRetryableError, RetryError } from '../utils/event-retry-handler';
+import { NonRetryableError, RetryError } from '../../utils/event-retry-handler';
 
 @Injectable()
 export class EventBusProcessingInterceptor implements NestInterceptor {

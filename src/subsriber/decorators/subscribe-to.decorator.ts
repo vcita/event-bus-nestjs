@@ -7,9 +7,9 @@ import {
   SubscribeToOptions,
   EventBusSubscriberMetadata,
 } from '../../interfaces/subscription.interface';
-import { createEventRetryHandler } from '../utils/event-retry-handler';
+import { createEventRetryHandler } from '../../utils/event-retry-handler';
 import configuration from '../configuration';
-import { EventBusDecoratorUtils } from '../utils/event-bus-decorator.utils';
+import { EventBusDecoratorUtils } from '../../utils/event-bus-decorator.utils';
 
 /**
  * Thin decorator for subscribing to event bus messages with standardized routing.
