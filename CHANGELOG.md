@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 # Releases 
+
+## 0.1.0-beta.2 (2025-07-10)
+### Changed
+- Simplified module configuration to use direct import instead of `register()`
+- Updated README to reflect the new recommended approach
+
 ## 0.1.0-beta.1 (2025-07-10) 
 ### Added
 - Initial release of the Event Bus NestJS package

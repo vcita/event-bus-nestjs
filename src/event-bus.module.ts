@@ -7,19 +7,11 @@ import { EVENT_BUS_CONFIG } from './constants';
 /**
  * Module providing event bus functionality for publishing events
  */
-@Module({})
+@Module({
+  providers: [AmqpConnectionService, EventBusPublisher],
+  exports: [EventBusPublisher],
+})
 export class EventBusModule {
-  /**
-   * Register the module with ConfigService (default behavior)
-   */
-  static register(): DynamicModule {
-    return {
-      module: EventBusModule,
-      providers: [AmqpConnectionService, EventBusPublisher],
-      exports: [EventBusPublisher],
-    };
-  }
-
   /**
    * Register the module with direct configuration
    */

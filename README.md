@@ -25,7 +25,7 @@ npm install @nestjs/common @nestjs/config @nestjs/core @vcita/infra-nestjs @vcit
 
 ### 1. Configure the module
 
-**Option A: Using ConfigService (Recommended)**
+**Option A: Direct Import (Recommended)**
 ```typescript
 // app.module.ts
 import { EventBusModule } from '@vcita/event-bus-nestjs';
@@ -42,7 +42,7 @@ import { EventBusModule } from '@vcita/event-bus-nestjs';
         },
       })],
     }),
-    EventBusModule.register(),
+    EventBusModule,
   ],
 })
 export class AppModule {}
@@ -144,7 +144,7 @@ describe('MyService', () => {
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      imports: [EventBusModule.register()], // No config needed in tests
+      imports: [EventBusModule],
       providers: [MyService],
     }).compile();
 
