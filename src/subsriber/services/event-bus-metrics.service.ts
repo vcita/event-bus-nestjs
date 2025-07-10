@@ -1,0 +1,134 @@
+import { Inject, Injectable } from '@nestjs/common';
+import { getToken } from '@willsoto/nestjs-prometheus';
+import { Counter, Histogram } from 'prom-client';
+import { EventBusMetadata } from '../interfaces/event.interface';
+
+export type EventStatus =
+  | 'received'
+  | 'processed'
+  | 'failed'
+  | 'retried'
+  | 'sent_to_error_exchange'
+  | 'duplicate_detected';
+export type ValidationFailureType = 'missing_actor' | 'invalid_headers' | 'invalid_payload';
+
+interface ParsedRoutingKey {
+  domain: string;
+  entity: string;
+  action: string;
+}
+
+@Injectable()
+export class EventBusMetricsService {
+  @Inject(getToken('eventbus_events_total'))
+  private readonly eventsCounter: Counter<string>;
+
+  @Inject(getToken('eventbus_processing_duration_seconds'))
+  private readonly processingDurationHistogram: Histogram<string>;
+
+  @Inject(getToken('eventbus_validation_failures_total'))
+  private readonly validationFailuresCounter: Counter<string>;
+
+  recordEventStatus(status: EventStatus, metadata: EventBusMetadata, routingKey: string): void {
+    const { domain, entity, action } = this.getActualDomainEntityAction(metadata, routingKey);
+    const labels = {
+      status,
+      event_type: metadata.eventType,
+      domain,
+      entity,
+      action,
+      queue_name: metadata.queueName,
+      routing_key: routingKey,
+    };
+
+    this.eventsCounter.inc(labels);
+  }
+
+  recordValidationFailure(
+    failureType: ValidationFailureType,
+    metadata: EventBusMetadata,
+    routingKey: string,
+  ): void {
+    const { domain, entity, action } = this.getActualDomainEntityAction(metadata, routingKey);
+    const labels = {
+      failure_type: failureType,
+      event_type: metadata.eventType,
+      domain,
+      entity,
+      action,
+      queue_name: metadata.queueName,
+      routing_key: routingKey,
+    };
+
+    this.validationFailuresCounter.inc(labels);
+    this.recordEventStatus('failed', metadata, routingKey);
+  }
+
+  /** Returns a function to call when processing completes to record duration */
+  startProcessingTimer(metadata: EventBusMetadata, routingKey: string): () => void {
+    const startTime = Date.now();
+
+    return () => {
+      const duration = (Date.now() - startTime) / 1000; // Convert to seconds
+      this.recordProcessingDuration(duration, metadata, routingKey);
+    };
+  }
+
+  private recordProcessingDuration(
+    duration: number,
+    metadata: EventBusMetadata,
+    routingKey: string,
+  ): void {
+    const { domain, entity, action } = this.getActualDomainEntityAction(metadata, routingKey);
+    const labels = {
+      event_type: metadata.eventType,
+      domain,
+      entity,
+      action,
+      queue_name: metadata.queueName,
+      routing_key: routingKey,
+    };
+
+    this.processingDurationHistogram.observe(labels, duration);
+  }
+
+  private getActualDomainEntityAction(
+    metadata: EventBusMetadata,
+    routingKey: string,
+  ): ParsedRoutingKey {
+    if (metadata.eventType === 'standard') {
+      const parsed = this.parseRoutingKey(routingKey);
+      if (parsed) {
+        return parsed;
+      }
+
+      // Fallback to metadata options if routing key parsing fails
+      const { domain, entity, action } = metadata.options;
+      return {
+        domain: domain ?? 'unknown',
+        entity: entity ?? 'unknown',
+        action: action ?? 'unknown',
+      };
+    } else {
+      // Legacy events don't have domain/entity/action - use unknown
+      return {
+        domain: 'unknown',
+        entity: 'unknown',
+        action: 'unknown',
+      };
+    }
+  }
+
+  private parseRoutingKey(routingKey: string): ParsedRoutingKey | null {
+    const parts = routingKey.split('.');
+    if (parts.length >= 3) {
+      const [domain, entity, ...actionParts] = parts;
+      return {
+        domain,
+        entity,
+        action: actionParts.join('.'),
+      };
+    }
+    return null;
+  }
+}
