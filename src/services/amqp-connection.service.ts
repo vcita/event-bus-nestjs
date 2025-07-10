@@ -1,7 +1,9 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit, Optional, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InfraLoggerService } from '@vcita/infra-nestjs';
 import amqp, { AmqpConnectionManager, ChannelWrapper } from 'amqp-connection-manager';
+import { EventBusConfig } from '../interfaces/config.interface';
+import { EVENT_BUS_CONFIG } from '../constants';
 
 const MOCKED_CHANNEL_WRAPPER: ChannelWrapper = {
   publish: async () => {
@@ -20,7 +22,25 @@ export class AmqpConnectionService implements OnModuleInit, OnModuleDestroy {
 
   private channelWrapper: ChannelWrapper;
 
-  constructor(private readonly configService: ConfigService) {}
+  private config: EventBusConfig;
+
+  constructor(
+    @Optional() private readonly configService?: ConfigService,
+    @Optional() @Inject(EVENT_BUS_CONFIG) private readonly directConfig?: EventBusConfig,
+  ) {
+    if (directConfig) {
+      this.config = directConfig;
+    } else if (configService) {
+      this.config = {
+        rabbitmqDsn: configService.get<string>('eventBus.rabbitmqDsn'),
+        sourceService: configService.get<string>('eventBus.sourceService'),
+        exchangeName: configService.get<string>('eventBus.exchangeName'),
+        defaultDomain: configService.get<string>('eventBus.defaultDomain'),
+      };
+    } else {
+      throw new Error('Either ConfigService or EventBusConfig must be provided');
+    }
+  }
 
   async onModuleInit(): Promise<void> {
     if (process.env.NODE_ENV === 'test') {
@@ -29,17 +49,15 @@ export class AmqpConnectionService implements OnModuleInit, OnModuleDestroy {
 
     this.logger.debug('Initializing persistent AMQP connection');
 
-    const rabbitmqDsn = this.configService.get<string>('eventBus.rabbitmqDsn');
+    const { rabbitmqDsn, exchangeName } = this.config;
     if (!rabbitmqDsn) {
-      throw new Error('RABBITMQ_DSN environment variable is required');
+      throw new Error('RABBITMQ_DSN configuration is required');
     }
 
     this.connection = amqp.connect(rabbitmqDsn);
     this.channelWrapper = this.connection.createChannel({
       json: true,
       setup: async (channel) => {
-        const exchangeName = this.configService.get<string>('eventBus.exchangeName');
-
         await channel.assertExchange(exchangeName, 'topic', { durable: true });
         return channel;
       },

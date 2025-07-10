@@ -1,0 +1,36 @@
+# Source files
+src/
+tsconfig*.json
+*.spec.ts
+*.test.ts
+
+# Development configuration
+.eslintrc.js
+.prettierrc
+jest.config.js
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and debugging
+*.log
+npm-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Environment files
+.env*
+
+# Version control
+.git/
+.gitignore
+
+# Cache
+.eslintcache 
