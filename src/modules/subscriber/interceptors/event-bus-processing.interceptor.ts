@@ -5,7 +5,7 @@ import { Reflector } from '@nestjs/core';
 import { InfraLoggerService, LogLevelEnum } from '@vcita/infra-nestjs';
 import { ContextStore, runWithCtx } from '@vcita/infra-nestjs/dist/infra/utils/context-store.utils';
 import { isRabbitContext } from '@golevelup/nestjs-rabbitmq';
-import { ConfigService } from '@nestjs/config';
+import { eventBusConfig } from 'src/configuration';
 import { EventHeaders, EventPayload } from '../../../interfaces/event.interface';
 import {
   EventData,
@@ -25,7 +25,6 @@ export class EventBusProcessingInterceptor implements NestInterceptor {
   constructor(
     private readonly reflector: Reflector,
     private readonly metricsService: EventBusMetricsService,
-    private readonly configService: ConfigService,
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
@@ -167,8 +166,7 @@ export class EventBusProcessingInterceptor implements NestInterceptor {
     }
 
     const attemptNumber = EventBusProcessingInterceptor.getCurrentAttemptCount(amqpMsg);
-    const maxRetries =
-      metadata.options.retry?.count ?? this.configService.get('eventBus.retry.defaultMaxRetries');
+    const maxRetries = metadata.options.retry?.count ?? eventBusConfig.retry?.defaultMaxRetries;
 
     if (attemptNumber > maxRetries) {
       this.logger.warn(`Event ${eventUid} exhausted all ${maxRetries} retry attempts`);

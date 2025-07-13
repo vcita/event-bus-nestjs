@@ -8,6 +8,7 @@ import {
   EVENT_BUS_SUBSCRIBER_METADATA_KEY,
 } from '../interfaces/subscription.interface';
 import { EventBusProcessingInterceptor } from '../modules/subscriber/interceptors/event-bus-processing.interceptor';
+import { eventBusConfig } from '../configuration';
 
 export class EventBusDecoratorUtils {
   /**
@@ -93,7 +94,6 @@ export class EventBusDecoratorUtils {
    */
   static assertRetryInfrastructure(
     logger: InfraLoggerService,
-    eventBusConfig: any,
     queueConfig: any,
     mainQueueOptions: any,
     retryQueueOptions: any,

@@ -8,7 +8,7 @@ import {
   EventBusSubscriberMetadata,
 } from '../../../interfaces/subscription.interface';
 import { createEventRetryHandler } from '../../../utils/event-retry-handler';
-import configuration from '../configuration';
+import { eventBusConfig } from '../../../configuration';
 import { EventBusDecoratorUtils } from '../../../utils/event-bus-decorator.utils';
 
 /**
@@ -48,8 +48,7 @@ export function SubscribeTo(options: SubscribeToOptions) {
 
   validateOptions(options);
 
-  const eventBusConfig = buildEventBusConfig();
-  const queueConfig = buildQueueConfig(options, eventBusConfig);
+  const queueConfig = buildQueueConfig(options);
 
   // Use shared utilities
   const { retryQueueOptions, errorQueueOptions, mainQueueOptions } =
@@ -57,7 +56,6 @@ export function SubscribeTo(options: SubscribeToOptions) {
 
   EventBusDecoratorUtils.assertRetryInfrastructure(
     logger,
-    eventBusConfig,
     queueConfig,
     mainQueueOptions,
     retryQueueOptions,
@@ -108,30 +106,11 @@ function validateOptions(options: SubscribeToOptions): void {
   }
 }
 
-function buildEventBusConfig() {
-  const config = configuration();
-  return {
-    rabbitmqDsn: config.eventBus.rabbitmqDsn,
-    appName: config.eventBus.appName,
-    exchange: config.eventBus.exchange,
-    defaultMaxRetries: config.eventBus.retry.defaultMaxRetries,
-    defaultRetryDelayMs: config.eventBus.retry.defaultRetryDelayMs,
-  };
-}
-
 function getRoutingKey(domain: string, entity: string, action: string): string {
   return `${domain.toLowerCase()}.${entity.toLowerCase()}.${action.toLowerCase()}`;
 }
 
-function buildQueueConfig(
-  options: SubscribeToOptions,
-  eventBusConfig: {
-    appName: string;
-    exchange: string;
-    defaultMaxRetries: number;
-    defaultRetryDelayMs: number;
-  },
-) {
+function buildQueueConfig(options: SubscribeToOptions) {
   const { domain, entity, action, queue, retry } = options;
   const routingKey = getRoutingKey(domain, entity, action);
   const queueName = queue || `${eventBusConfig.appName}.${domain}.${entity}.${action}`;
@@ -146,8 +125,8 @@ function buildQueueConfig(
     errorExchangeName: `${queueName}.error`,
     errorQueueName: `${queueName}.error`,
     retryPolicy: {
-      maxRetries: retry?.count ?? eventBusConfig.defaultMaxRetries,
-      delayMs: retry?.delayMs ?? eventBusConfig.defaultRetryDelayMs,
+      maxRetries: retry?.count ?? eventBusConfig.retry?.defaultMaxRetries,
+      delayMs: retry?.delayMs ?? eventBusConfig.retry?.defaultRetryDelayMs,
     },
   };
 }

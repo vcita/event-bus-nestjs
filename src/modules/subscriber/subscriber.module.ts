@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RedisModule } from 'nestjs-redis';
 import {
   PrometheusModule,
@@ -10,38 +9,34 @@ import {
 import { ProductSubscriber } from './handlers/product.subscriber';
 import { EventBusProcessingInterceptor } from './interceptors/event-bus-processing.interceptor';
 import { EventBusMetricsService } from './services/event-bus-metrics.service';
+import { eventBusConfig } from '../../configuration';
 
 @Module({
   imports: [
-    ConfigModule,
     RedisModule,
     PrometheusModule.register({
       defaultMetrics: {
         enabled: false,
       },
     }),
-    RabbitMQModule.forRootAsync(RabbitMQModule, {
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        uri: configService.get('eventBus.rabbitmqDsn'),
-        exchanges: [
-          {
-            name: configService.get('eventBus.exchange'),
-            type: 'topic',
-            options: {
-              durable: true,
-            },
+    RabbitMQModule.forRoot(RabbitMQModule, {
+      uri: eventBusConfig.rabbitmqDsn,
+      exchanges: [
+        {
+          name: eventBusConfig.exchange,
+          type: 'topic',
+          options: {
+            durable: true,
           },
-          {
-            name: configService.get('eventBus.legacy.exchange'),
-            type: 'topic',
-            options: {
-              durable: false, // Legacy events are not durable
-            },
+        },
+        {
+          name: eventBusConfig.legacy?.exchange,
+          type: 'topic',
+          options: {
+            durable: false, // Legacy events are not durable
           },
-        ],
-      }),
+        },
+      ],
     }),
   ],
   providers: [

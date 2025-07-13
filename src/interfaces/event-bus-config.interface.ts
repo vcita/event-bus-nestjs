@@ -3,7 +3,14 @@
  */
 export interface EventBusConfig {
   rabbitmqDsn: string;
-  sourceService: string;
-  exchangeName: string;
+  appName: string;
+  exchange: string;
   defaultDomain: string;
+  legacy?: {
+    exchange: string;
+  };
+  retry?: {
+    defaultMaxRetries: number;
+    defaultRetryDelayMs: number;
+  };
 }

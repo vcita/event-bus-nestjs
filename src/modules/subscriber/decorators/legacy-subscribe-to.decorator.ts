@@ -5,7 +5,7 @@ import {
   EventBusSubscriberMetadata,
 } from '../../../interfaces/subscription.interface';
 import { createEventRetryHandler } from '../../../utils/event-retry-handler';
-import configuration from '../configuration';
+import { eventBusConfig } from '../../../configuration';
 import { EventBusDecoratorUtils } from '../../../utils/event-bus-decorator.utils';
 
 /**
@@ -40,8 +40,7 @@ export function LegacySubscribeTo(options: LegacySubscribeToOptions) {
 
   validateLegacyOptions(options);
 
-  const eventBusConfig = buildLegacyEventBusConfig();
-  const queueConfig = buildLegacyQueueConfig(options, eventBusConfig);
+  const queueConfig = buildLegacyQueueConfig(options);
 
   // Use shared utilities
   const { retryQueueOptions, errorQueueOptions, mainQueueOptions } =
@@ -49,7 +48,6 @@ export function LegacySubscribeTo(options: LegacySubscribeToOptions) {
 
   EventBusDecoratorUtils.assertRetryInfrastructure(
     logger,
-    eventBusConfig,
     queueConfig,
     mainQueueOptions,
     retryQueueOptions,
@@ -93,18 +91,7 @@ function validateLegacyOptions(options: LegacySubscribeToOptions): void {
   }
 }
 
-function buildLegacyEventBusConfig() {
-  const config = configuration();
-  return {
-    rabbitmqDsn: config.eventBus.rabbitmqDsn,
-    appName: config.eventBus.appName,
-    exchange: config.eventBus.legacy.exchange,
-    defaultMaxRetries: config.eventBus.retry.defaultMaxRetries,
-    defaultRetryDelayMs: config.eventBus.retry.defaultRetryDelayMs,
-  };
-}
-
-function buildLegacyQueueConfig(options: LegacySubscribeToOptions, eventBusConfig: any) {
+function buildLegacyQueueConfig(options: LegacySubscribeToOptions) {
   const queueName = options.queue || `legacy.${eventBusConfig.appName}.${options.routingKey}`;
 
   return {
@@ -118,8 +105,8 @@ function buildLegacyQueueConfig(options: LegacySubscribeToOptions, eventBusConfi
     errorExchangeName: `${queueName}.error`,
     errorQueueName: `${queueName}.error`,
     retryPolicy: {
-      maxRetries: options.retry?.count ?? eventBusConfig.defaultMaxRetries,
-      delayMs: options.retry?.delayMs ?? eventBusConfig.defaultRetryDelayMs,
+      maxRetries: options.retry?.count ?? eventBusConfig.retry?.defaultMaxRetries,
+      delayMs: options.retry?.delayMs ?? eventBusConfig.retry?.defaultRetryDelayMs,
     },
   };
 }

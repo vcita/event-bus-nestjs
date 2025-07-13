@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InfraLoggerService } from '@vcita/infra-nestjs';
 import amqp, { AmqpConnectionManager, ChannelWrapper } from 'amqp-connection-manager';
-import { EventBusConfigService } from 'src/services/event-bus-config.service';
+import { eventBusConfig } from 'src/configuration';
 
 const MOCKED_CHANNEL_WRAPPER: ChannelWrapper = {
   publish: async () => {
@@ -20,8 +20,6 @@ export class AmqpConnectionService implements OnModuleInit, OnModuleDestroy {
 
   private channelWrapper: ChannelWrapper;
 
-  constructor(private readonly eventBusConfigService: EventBusConfigService) {}
-
   async onModuleInit(): Promise<void> {
     if (process.env.NODE_ENV === 'test') {
       return;
@@ -29,7 +27,7 @@ export class AmqpConnectionService implements OnModuleInit, OnModuleDestroy {
 
     this.logger.debug('Initializing persistent AMQP connection');
 
-    const { rabbitmqDsn, exchangeName } = this.eventBusConfigService.getConfig();
+    const { rabbitmqDsn, exchange } = eventBusConfig;
     if (!rabbitmqDsn) {
       throw new Error('RABBITMQ_DSN configuration is required');
     }
@@ -38,7 +36,7 @@ export class AmqpConnectionService implements OnModuleInit, OnModuleDestroy {
     this.channelWrapper = this.connection.createChannel({
       json: true,
       setup: async (channel) => {
-        await channel.assertExchange(exchangeName, 'topic', { durable: true });
+        await channel.assertExchange(exchange, 'topic', { durable: true });
         return channel;
       },
     });

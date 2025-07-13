@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InfraLoggerService } from '@vcita/infra-nestjs';
 import { Options } from 'amqplib';
 import { PublishEventOptions } from 'src/interfaces/event.interface';
-import { EventBusConfigService } from 'src/services/event-bus-config.service';
+import { eventBusConfig } from 'src/configuration';
 import { AmqpConnectionService } from './amqp-connection.service';
 import { EventBuilder } from '../utils/event-builder.util';
 import { TraceUtil } from '../utils/trace.util';
@@ -14,10 +14,7 @@ import { TraceUtil } from '../utils/trace.util';
 export class EventBusPublisher<T = unknown> {
   private readonly logger = new InfraLoggerService(EventBusPublisher.name);
 
-  constructor(
-    private readonly amqpConnection: AmqpConnectionService,
-    private readonly eventBusConfigService: EventBusConfigService,
-  ) {}
+  constructor(private readonly amqpConnection: AmqpConnectionService) {}
 
   /**
    * Publishes an event to the event bus
@@ -64,9 +61,8 @@ export class EventBusPublisher<T = unknown> {
       EventBusPublisher.validatePublishOptions(options);
 
       const traceId = TraceUtil.getOrGenerateTraceId();
-      const config = this.eventBusConfigService.getConfig();
-      const event = EventBuilder.buildEvent(options, config.sourceService, traceId);
-      const domain = options.domain || config.defaultDomain;
+      const event = EventBuilder.buildEvent(options, eventBusConfig.appName, traceId);
+      const domain = options.domain || eventBusConfig.defaultDomain;
       const routingKey = EventBuilder.buildRoutingKey(
         domain,
         options.entityType,
@@ -75,7 +71,7 @@ export class EventBusPublisher<T = unknown> {
 
       this.logger.debug(
         `Publishing event ${event.headers.event_uid} to exchange ` +
-          `${config.exchangeName} with routing key ${routingKey}`,
+          `${eventBusConfig.exchange} with routing key ${routingKey}`,
       );
 
       const channelWrapper = this.amqpConnection.getChannelWrapper();
@@ -85,7 +81,12 @@ export class EventBusPublisher<T = unknown> {
         persistent: true,
       };
 
-      await channelWrapper.publish(config.exchangeName, routingKey, event.payload, publishOptions);
+      await channelWrapper.publish(
+        eventBusConfig.exchange,
+        routingKey,
+        event.payload,
+        publishOptions,
+      );
 
       const duration = Date.now() - startTime;
       this.logger.debug(`Event published successfully: ${event.headers.event_uid} (${duration}ms)`);

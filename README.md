@@ -38,9 +38,16 @@ import { EventBusModule } from '@vcita/event-bus-nestjs';
       load: [() => ({
         eventBus: {
           rabbitmqDsn: process.env.RABBITMQ_DSN,
-          sourceService: process.env.APP_NAME,
-          exchangeName: process.env.EVENT_BUS_EXCHANGE_NAME || 'event_bus',
-          defaultDomain: process.env.EVENT_BUS_DEFAULT_DOMAIN || 'my-domain',
+          appName: process.env.APP_NAME,
+          exchange: process.env.EVENT_BUS_EXCHANGE_NAME || 'event_bus',
+          defaultDomain: process.env.EVENT_BUS_DEFAULT_DOMAIN || 'scheduling',
+          legacy: {
+            exchange: process.env.EVENT_BUS_LEGACY_EXCHANGE || 'legacy_events',
+          },
+          retry: {
+            defaultMaxRetries: parseInt(process.env.EVENT_BUS_DEFAULT_MAX_RETRIES || '3'),
+            defaultRetryDelayMs: parseInt(process.env.EVENT_BUS_DEFAULT_RETRY_DELAY_MS || '5000'),
+          },
         },
       })],
     }),
@@ -54,9 +61,16 @@ export class AppModule {}
 ```typescript
 EventBusModule.forRoot({
   rabbitmqDsn: 'amqp://localhost:5672',
-  sourceService: 'my-service',
-  exchangeName: 'event_bus',
+  appName: 'my-service',
+  exchange: 'event_bus',
   defaultDomain: 'my-domain',
+  legacy: {
+    exchange: 'legacy_events',
+  },
+  retry: {
+    defaultMaxRetries: 3,
+    defaultRetryDelayMs: 5000,
+  },
 })
 ```
 
@@ -257,8 +271,8 @@ async handleProductCreated(
 | Option | Required | Description | Default |
 |--------|----------|-------------|---------|
 | `rabbitmqDsn` | ✅ | RabbitMQ connection string | - |
-| `sourceService` | ✅ | Name of your service | - |
-| `exchangeName` | ✅ | RabbitMQ exchange name | - |
+| `appName` | ✅ | Name of your service | - |
+| `exchange` | ✅ | RabbitMQ exchange name | - |
 | `defaultDomain` | ✅ | Default domain for routing keys | - |
 
 ### Subscriber Configuration
@@ -267,11 +281,11 @@ The subscriber module uses the same configuration as the publisher, plus additio
 
 | Option | Required | Description | Default |
 |--------|----------|-------------|---------|
-| `eventBus.appName` | ✅ | Application name for queue naming | - |
-| `eventBus.exchange` | ✅ | Main exchange for standard events | - |
-| `eventBus.legacy.exchange` | ✅ | Exchange for legacy events | - |
-| `eventBus.retry.defaultMaxRetries` | ❌ | Default retry count | 3 |
-| `eventBus.retry.defaultRetryDelayMs` | ❌ | Default retry delay | 5000 |
+| `appName` | ✅ | Application name for queue naming | - |
+| `exchange` | ✅ | Main exchange for standard events | - |
+| `legacy.exchange` | ✅ | Exchange for legacy events | - |
+| `retry.defaultMaxRetries` | ❌ | Default retry count | 3 |
+| `retry.defaultRetryDelayMs` | ❌ | Default retry delay | 5000 |
 
 ### Full Configuration Example
 
@@ -280,11 +294,9 @@ The subscriber module uses the same configuration as the publisher, plus additio
 export default () => ({
   eventBus: {
     rabbitmqDsn: process.env.RABBITMQ_DSN,
-    sourceService: process.env.APP_NAME,
     appName: process.env.APP_NAME,
-    exchangeName: process.env.EVENT_BUS_EXCHANGE_NAME || 'event_bus',
-    defaultDomain: process.env.EVENT_BUS_DEFAULT_DOMAIN || 'scheduling',
     exchange: process.env.EVENT_BUS_EXCHANGE_NAME || 'event_bus',
+    defaultDomain: process.env.EVENT_BUS_DEFAULT_DOMAIN || 'scheduling',
     legacy: {
       exchange: process.env.EVENT_BUS_LEGACY_EXCHANGE || 'legacy_events',
     },
