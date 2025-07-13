@@ -6,10 +6,10 @@ export const eventBusConfig: EventBusConfig = {
   appName: process.env.APP_NAME || 'event-bus-app',
   defaultDomain: process.env.EVENT_BUS_DEFAULT_DOMAIN || 'default',
   legacy: {
-    exchange: process.env.EVENT_BUS_LEGACY_EXCHANGE || 'legacy_events',
+    exchange: process.env.EVENT_BUS_LEGACY_EXCHANGE || 'vcita.model_updates',
   },
   retry: {
-    defaultMaxRetries: parseInt(process.env.EVENT_BUS_DEFAULT_MAX_RETRIES || '3', 10),
-    defaultRetryDelayMs: parseInt(process.env.EVENT_BUS_DEFAULT_RETRY_DELAY_MS || '5000', 10),
+    defaultMaxRetries: parseInt(process.env.EVENT_BUS_DEFAULT_MAX_RETRIES || '1', 10),
+    defaultRetryDelayMs: parseInt(process.env.EVENT_BUS_DEFAULT_RETRY_DELAY_MS || '10000', 10),
   },
 };

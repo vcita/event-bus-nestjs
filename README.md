@@ -142,9 +142,9 @@ The module reads configuration from the following environment variables:
 | `APP_NAME` | string | ✅ | Your service name (used for queues and source service) | - |
 | `EVENT_BUS_EXCHANGE_NAME` | string | ❌ | RabbitMQ exchange name for standard events | `event_bus` |
 | `EVENT_BUS_DEFAULT_DOMAIN` | string | ❌ | Default domain for routing keys | `default` |
-| `EVENT_BUS_LEGACY_EXCHANGE` | string | ❌ | Exchange name for legacy events | `legacy_events` |
-| `EVENT_BUS_DEFAULT_MAX_RETRIES` | number | ❌ | Default retry count | `3` |
-| `EVENT_BUS_DEFAULT_RETRY_DELAY_MS` | number | ❌ | Default retry delay in milliseconds | `5000` |
+| `EVENT_BUS_LEGACY_EXCHANGE` | string | ❌ | Exchange name for legacy events | `vcita.model_updates` |
+| `EVENT_BUS_DEFAULT_MAX_RETRIES` | number | ❌ | Default retry count | `1` |
+| `EVENT_BUS_DEFAULT_RETRY_DELAY_MS` | number | ❌ | Default retry delay in milliseconds | `10000` |
 
 ### Example Configuration
 
@@ -158,9 +158,9 @@ APP_NAME=my-service
 # Optional
 EVENT_BUS_EXCHANGE_NAME=event_bus
 EVENT_BUS_DEFAULT_DOMAIN=scheduling
-EVENT_BUS_LEGACY_EXCHANGE=legacy_events
-EVENT_BUS_DEFAULT_MAX_RETRIES=3
-EVENT_BUS_DEFAULT_RETRY_DELAY_MS=5000
+EVENT_BUS_LEGACY_EXCHANGE=vcita.model_updates
+EVENT_BUS_DEFAULT_MAX_RETRIES=1
+EVENT_BUS_DEFAULT_RETRY_DELAY_MS=10000
 ```
 
 ## Publishing Events
