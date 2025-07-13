@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 # Releases 
 
+## 0.2.0-beta.4 (2025-07-13)
+### Fixed
+- **Dependency Injection**: Fixed `EventBusMetricsService` dependency resolution issue in external modules by properly exporting required services from `SubscriberModule`
+
 ## 0.2.0-beta.3 (2025-07-13)
 ### Changed
 - Updated peer dependencies to allow both v3 and v4 of `@vcita/oauth-client-nestjs`

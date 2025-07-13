@@ -73,5 +73,6 @@ import { eventBusConfig } from '../../configuration';
       ],
     }),
   ],
+  exports: [EventBusProcessingInterceptor, EventBusMetricsService],
 })
 export class SubscriberModule {}
