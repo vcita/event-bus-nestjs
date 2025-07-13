@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 # Releases 
 
+## 0.2.0-beta.5 (2025-01-15)
+### Improved
+- **Test Environment**: RabbitMQ module is now completely excluded from imports in test environments (`NODE_ENV=test`) instead of just being disabled, improving test performance and preventing unnecessary connection attempts
+
 ## 0.2.0-beta.4 (2025-07-13)
 ### Fixed
 - **Dependency Injection**: Fixed `EventBusMetricsService` dependency resolution issue in external modules by properly exporting required services from `SubscriberModule`

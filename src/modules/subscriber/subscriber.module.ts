@@ -18,25 +18,29 @@ import { eventBusConfig } from '../../configuration';
         enabled: false,
       },
     }),
-    RabbitMQModule.forRoot(RabbitMQModule, {
-      uri: eventBusConfig.rabbitmqDsn,
-      exchanges: [
-        {
-          name: eventBusConfig.exchange,
-          type: 'topic',
-          options: {
-            durable: true,
-          },
-        },
-        {
-          name: eventBusConfig.legacy?.exchange,
-          type: 'topic',
-          options: {
-            durable: false, // Legacy events are not durable
-          },
-        },
-      ],
-    }),
+    ...(process.env.NODE_ENV !== 'test'
+      ? [
+          RabbitMQModule.forRoot(RabbitMQModule, {
+            uri: eventBusConfig.rabbitmqDsn,
+            exchanges: [
+              {
+                name: eventBusConfig.exchange,
+                type: 'topic',
+                options: {
+                  durable: true,
+                },
+              },
+              {
+                name: eventBusConfig.legacy?.exchange,
+                type: 'topic',
+                options: {
+                  durable: false, // Legacy events are not durable
+                },
+              },
+            ],
+          }),
+        ]
+      : []),
   ],
   providers: [
     EventBusProcessingInterceptor,
