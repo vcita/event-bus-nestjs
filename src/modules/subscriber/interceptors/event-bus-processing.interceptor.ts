@@ -5,7 +5,7 @@ import { Reflector } from '@nestjs/core';
 import { InfraLoggerService, LogLevelEnum } from '@vcita/infra-nestjs';
 import { ContextStore, runWithCtx } from '@vcita/infra-nestjs/dist/infra/utils/context-store.utils';
 import { isRabbitContext } from '@golevelup/nestjs-rabbitmq';
-import { eventBusConfig } from 'src/configuration';
+import { eventBusConfig } from '../../../configuration';
 import { EventHeaders, EventPayload } from '../../../interfaces/event.interface';
 import {
   EventData,

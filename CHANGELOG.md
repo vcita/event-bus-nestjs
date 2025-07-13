@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 # Releases 
 
+## 0.2.0-beta.2 (2025-01-24)
+### Fixed
+- **TypeScript Declarations**: Fixed import paths in generated declaration files from absolute `src/` paths to relative paths, resolving `Cannot find module 'src/interfaces/event.interface'` errors when consuming the package
+
 ## 0.2.0-beta.1 (2025-07-13)
 ### Added
 - **Subscriber Module**: Complete event subscription system with automatic retry and error handling

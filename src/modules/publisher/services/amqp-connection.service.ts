@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InfraLoggerService } from '@vcita/infra-nestjs';
 import amqp, { AmqpConnectionManager, ChannelWrapper } from 'amqp-connection-manager';
-import { eventBusConfig } from 'src/configuration';
+import { eventBusConfig } from '../../../configuration';
 
 const MOCKED_CHANNEL_WRAPPER: ChannelWrapper = {
   publish: async () => {
