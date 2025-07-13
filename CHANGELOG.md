@@ -10,7 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 # Releases 
 
-## 0.2.0-beta.2 (2025-01-24)
+## 0.2.0-beta.3 (2025-07-13)
+### Changed
+- Updated peer dependencies to allow both v3 and v4 of `@vcita/oauth-client-nestjs`
+
+## 0.2.0-beta.2 (2025-07-13)
 ### Fixed
 - **TypeScript Declarations**: Fixed import paths in generated declaration files from absolute `src/` paths to relative paths, resolving `Cannot find module 'src/interfaces/event.interface'` errors when consuming the package
 
