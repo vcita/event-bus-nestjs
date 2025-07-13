@@ -6,7 +6,6 @@ import {
   makeCounterProvider,
   makeHistogramProvider,
 } from '@willsoto/nestjs-prometheus';
-import { ProductSubscriber } from './handlers/product.subscriber';
 import { EventBusProcessingInterceptor } from './interceptors/event-bus-processing.interceptor';
 import { EventBusMetricsService } from './services/event-bus-metrics.service';
 import { eventBusConfig } from '../../configuration';
@@ -40,7 +39,6 @@ import { eventBusConfig } from '../../configuration';
     }),
   ],
   providers: [
-    ProductSubscriber,
     EventBusProcessingInterceptor,
     EventBusMetricsService,
     makeCounterProvider({
