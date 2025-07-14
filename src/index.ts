@@ -1,6 +1,6 @@
 // Main exports
-export { EventBusModule } from './event-bus.module';
-export { EVENT_BUS_CONFIG } from './constants';
+export { SubscriberModule } from './modules/subscriber/subscriber.module';
+export { PublisherModule } from './modules/publisher/publisher.module';
 export { EventBusPublisher } from './modules/publisher/services/event-bus-publisher.service';
 
 // Interface exports

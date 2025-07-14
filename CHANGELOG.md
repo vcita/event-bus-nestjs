@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 # Releases 
 
+## 0.2.0-beta.6 (2025-07-14)
+### Changed
+- **Module Structure**: Removed EventBusModule and replaced with separate SubscriberModule and PublisherModule
+
 ## 0.2.0-beta.5 (2025-01-15)
 ### Improved
 - **Test Environment**: RabbitMQ module is now completely excluded from imports in test environments (`NODE_ENV=test`) instead of just being disabled, improving test performance and preventing unnecessary connection attempts
