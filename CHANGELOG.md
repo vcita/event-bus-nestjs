@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 # Releases 
 
+## 1.0.0 (2025-07-14)
+### Initial Stable Release
+
 ## 0.2.0-beta.7 (2025-07-14)
 ### Changed
 - **Configuration**: Removed default values for several configuration options
