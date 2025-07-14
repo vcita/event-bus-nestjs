@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 # Releases 
 
+## 0.2.0-beta.7 (2025-07-14)
+### Changed
+- **Configuration**: Removed default values for several configuration options
+- **Documentation**: Added further reading section to README with link to Event Bus Architecture documentation
+
 ## 0.2.0-beta.6 (2025-07-14)
 ### Changed
 - **Module Structure**: Removed EventBusModule and replaced with separate SubscriberModule and PublisherModule

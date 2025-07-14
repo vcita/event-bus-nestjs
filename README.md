@@ -16,6 +16,7 @@ A comprehensive NestJS module for publishing and subscribing to standardized eve
 - [Environment Variables](#environment-variables)
 - [Advanced Usage](#advanced-usage)
 - [API Reference](#api-reference)
+- [Further Reading](https://myvcita.atlassian.net/wiki/spaces/IT/pages/3833626768/Event+Bus+Architecture+-+Documentation)
 
 ## Features
 
@@ -23,8 +24,8 @@ A comprehensive NestJS module for publishing and subscribing to standardized eve
 ✅ **Flexible Event Subscription**: Subscribe to events using decorators with pattern matching  
 ✅ **AMQP Connection Management**: Handles RabbitMQ connections, queues, and exchanges automatically  
 ✅ **Distributed Tracing**: Built-in support for tracing across services  
-✅ **Retry Mechanisms**: Configurable retry logic with exponential backoff  
-✅ **Error Handling**: Comprehensive error handling with dead letter queues  
+✅ **Retry Mechanisms**: Configurable retry logic  
+✅ **Error Handling**: Comprehensive error handling with error queues  
 ✅ **Legacy Support**: Backward compatibility with legacy event formats  
 ✅ **Testing Support**: Automatic mocking in test environments  
 ✅ **Metrics Integration**: Prometheus metrics for monitoring (via @vcita/infra-nestjs)  
@@ -372,7 +373,7 @@ Examples:
 
 ### Built-in Retry Logic
 
-The module automatically retries failed event processing with exponential backoff:
+The module automatically retries failed event processing:
 
 ```typescript
 @SubscribeTo({
@@ -381,7 +382,7 @@ The module automatically retries failed event processing with exponential backof
   action: 'created',
   retry: {
     count: 5,        // Retry up to 5 times
-    delayMs: 10000   // Start with 10 second delay
+    delayMs: 10000   // Delay between retries
   }
 })
 async handleProductCreated(
@@ -424,9 +425,9 @@ async handleProductCreated(
 }
 ```
 
-### Dead Letter Queues
+### Error Queues
 
-After all retries are exhausted, messages are sent to dead letter queues for manual inspection.
+After all retries are exhausted, messages are sent to error queues for manual inspection.
 
 ## Testing
 
