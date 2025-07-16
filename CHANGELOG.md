@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 # Releases 
 
+## 1.0.1 (2025-07-16)
+### Fixed
+- **Legacy Subscription**: Fixed `@LegacySubscribeTo` decorator to use the correct legacy exchange (`eventBusConfig.legacy.exchange`) instead of the standard exchange (`eventBusConfig.exchange`)
+
 ## 1.0.0 (2025-07-14)
 ### Initial Stable Release
 

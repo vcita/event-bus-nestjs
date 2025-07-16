@@ -56,7 +56,7 @@ export function LegacySubscribeTo(options: LegacySubscribeToOptions) {
 
   const errorHandler = createEventRetryHandler(logger, queueConfig);
   const rabbitConfig = EventBusDecoratorUtils.buildRabbitConfig(
-    eventBusConfig.exchange,
+    eventBusConfig.legacy.exchange,
     queueConfig,
     mainQueueOptions,
     errorHandler,
