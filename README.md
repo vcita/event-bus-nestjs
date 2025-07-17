@@ -43,16 +43,48 @@ npm install @nestjs/common @nestjs/core @vcita/infra-nestjs @vcita/oauth-client-
 
 ## Quick Start
 
-### 1. Import the Module
+### 1. Import the Modules
 
+You can import the modules individually based on your needs:
+
+**For Publishing Only:**
 ```typescript
 // app.module.ts
 import { Module } from '@nestjs/common';
-import { EventBusModule } from '@vcita/event-bus-nestjs';
+import { PublisherModule } from '@vcita/event-bus-nestjs';
 
 @Module({
   imports: [
-    EventBusModule,
+    PublisherModule,
+  ],
+})
+export class AppModule {}
+```
+
+**For Subscribing Only:**
+```typescript
+// app.module.ts
+import { Module } from '@nestjs/common';
+import { SubscriberModule } from '@vcita/event-bus-nestjs';
+
+@Module({
+  imports: [
+    SubscriberModule,
+  ],
+})
+export class AppModule {}
+```
+
+**For Both Publishing and Subscribing:**
+```typescript
+// app.module.ts
+import { Module } from '@nestjs/common';
+import { PublisherModule, SubscriberModule } from '@vcita/event-bus-nestjs';
+
+@Module({
+  imports: [
+    PublisherModule,
+    SubscriberModule,
   ],
 })
 export class AppModule {}
@@ -119,11 +151,11 @@ Don't forget to register your subscriber in your module:
 ```typescript
 // app.module.ts
 import { Module } from '@nestjs/common';
-import { EventBusModule } from '@vcita/event-bus-nestjs';
+import { SubscriberModule } from '@vcita/event-bus-nestjs';
 import { UserSubscriber } from './user.subscriber';
 
 @Module({
-  imports: [EventBusModule],
+  imports: [SubscriberModule],
   providers: [UserSubscriber], // Add your subscribers here
 })
 export class AppModule {}
@@ -438,7 +470,7 @@ In test environments (`NODE_ENV=test`), the module automatically mocks AMQP conn
 ```typescript
 // my.service.spec.ts
 import { Test } from '@nestjs/testing';
-import { EventBusModule, EventBusPublisher } from '@vcita/event-bus-nestjs';
+import { PublisherModule, EventBusPublisher } from '@vcita/event-bus-nestjs';
 
 describe('MyService', () => {
   let service: MyService;
@@ -446,7 +478,7 @@ describe('MyService', () => {
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      imports: [EventBusModule], // No configuration needed in tests
+      imports: [PublisherModule], // No configuration needed in tests
       providers: [MyService],
     }).compile();
 
