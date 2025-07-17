@@ -1,6 +1,6 @@
 {
   "name": "@vcita/event-bus-nestjs",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Event Bus for NestJS applications with AMQP support",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
