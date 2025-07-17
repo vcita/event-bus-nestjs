@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 # Releases 
 
+## 1.0.2 (2025-07-17)
+### Changed
+- **Documentation**: Updated README to properly document PublisherModule and SubscriberModule instead of EventBusModule, reflecting the actual modular architecture and providing clear examples for different usage scenarios (publish-only, subscribe-only, or both)
+
 ## 1.0.1 (2025-07-16)
 ### Fixed
 - **Legacy Subscription**: Fixed `@LegacySubscribeTo` decorator to use the correct legacy exchange (`eventBusConfig.legacy.exchange`) instead of the standard exchange (`eventBusConfig.exchange`)
