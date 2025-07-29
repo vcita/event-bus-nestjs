@@ -22,6 +22,7 @@ export interface EventHeaders {
  */
 export interface EventPayload<T = unknown> {
   data: T;
+  prev_data?: T; // Previous entity state for updated/deleted events
   schema_ref: string;
 }
 
@@ -42,6 +43,7 @@ export interface PublishEventOptions<T = unknown> {
   entityType: string;
   eventType: EventType;
   data: T;
+  prevData?: T; // Previous entity state for updated/deleted events
   actor: Actor;
   version?: string;
   domain?: string;

@@ -137,10 +137,12 @@ export class UserSubscriber {
   })
   async handleUserCreated(
     auth: AuthorizationPayloadEntity,
-    event: EventPayload<{ id: string; email: string }>,
+    userData: EventPayload<{ id: string; email: string }>,
+    prevUserData: EventPayload<{ id: string; email: string }>,
     headers: EventHeaders,
   ): Promise<void> {
-    this.logger.log(`User created: ${event.data.id} by ${auth.actor.id}`);
+    this.logger.log(`User created: ${userData.data.id} by ${auth.actor.id}`);
+    // For 'created' events, prevUserData will be undefined
     // Your business logic here
   }
 }
@@ -217,6 +219,17 @@ export class MyService {
       domain: 'payments',          // Optional: Domain override (default: from config)
     });
   }
+
+  async publishUpdateEvent() {
+    // For updated/deleted events, include prevData to enable change detection
+    await this.eventBusPublisher.publish({
+      entityType: 'resource',
+      eventType: 'updated',
+      data: { id: '123', name: 'Updated Resource Name', status: 'active' },
+      prevData: { id: '123', name: 'Resource Name', status: 'inactive' }, // Previous state
+      actor: { id: 'user-1', type: 'user' },
+    });
+  }
 }
 ```
 
@@ -228,6 +241,71 @@ Common event types include:
 - `deleted` - Entity was deleted
 
 You can also use custom event types as needed.
+
+### Change Detection with Previous Entity State
+
+For `updated` and `deleted` events, you **must** include the previous state of the entity to enable subscribers to detect meaningful changes:
+
+```typescript
+// Publishing an update with previous state for change detection
+await this.eventBusPublisher.publish({
+  entityType: 'user',
+  eventType: 'updated',
+  data: {
+    id: 'user-123',
+    email: 'newemail@example.com',
+    name: 'John Doe',
+    status: 'active'
+  },
+  prevData: {
+    id: 'user-123', 
+    email: 'oldemail@example.com',
+    name: 'John Doe',
+    status: 'inactive'
+  },
+  actor: { id: 'admin-1', type: 'user' },
+});
+```
+
+Subscribers can then compare `event.data` with `event.prev_data` to determine what specifically changed:
+
+```typescript
+@SubscribeTo({
+  domain: 'users',
+  entity: 'user', 
+  action: 'updated',
+})
+async handleUserUpdated(
+  auth: AuthorizationPayloadEntity,
+  userData: EventPayload<UserData>,
+  prevUserData: EventPayload<UserData>,
+  headers: EventHeaders,
+): Promise<void> {
+  const currentUser = userData.data;
+  const previousUser = prevUserData?.data;
+  
+  if (previousUser) {
+    // Check if email changed
+    if (currentUser.email !== previousUser.email) {
+      await this.handleEmailChange(currentUser.id, previousUser.email, currentUser.email);
+    }
+    
+    // Check if status changed
+    if (currentUser.status !== previousUser.status) {
+      await this.handleStatusChange(currentUser.id, previousUser.status, currentUser.status);
+    }
+  }
+  
+  // Always handle the update
+  await this.processUserUpdate(currentUser);
+}
+```
+
+**Benefits:**
+- **Selective Processing**: Only react to meaningful changes
+- **Audit Trails**: Track what specifically changed
+- **Performance**: Avoid unnecessary processing when only irrelevant fields changed
+- **Business Logic**: Implement field-specific change handlers
 
 ### Actor Information
 
@@ -345,9 +423,10 @@ export class LegacySubscriber {
 **Standard Subscription Method:**
 ```typescript
 async methodName(
-  auth: AuthorizationPayloadEntity,  // Actor context with authentication
-  event: EventPayload<T>,           // Structured event data
-  headers: EventHeaders,            // Event metadata
+  auth: AuthorizationPayloadEntity,     // Actor context with authentication
+  currentData: EventPayload<T>,         // Current entity state
+  previousData: EventPayload<T>,        // Previous entity state (undefined for 'created' events)
+  headers: EventHeaders,                // Event metadata
 ): Promise<void>
 ```
 
@@ -387,10 +466,17 @@ Every published event follows this standardized structure:
       email: "newuser@example.com",
       name: "New User"
     },
+    prev_data: {                                        // Previous state (for updated/deleted events)
+      id: "user-456",
+      email: "olduser@example.com", 
+      name: "Old User"
+    },
     schema_ref: "user/created/v1"                       // Schema reference
   }
 }
 ```
+
+**Note:** The `prev_data` field is **required** for `updated` and `deleted` events. You must provide the `prevData` option when publishing these event types to enable change detection and determine if meaningful changes occurred.
 
 ### Routing Keys
 
@@ -486,14 +572,30 @@ describe('MyService', () => {
     eventBusPublisher = module.get<EventBusPublisher>(EventBusPublisher);
   });
 
-  it('should publish events', async () => {
+  it('should publish created events', async () => {
     const user = await service.createUser(userData, actor);
 
-    // Verify the event was published
+    // Verify the created event was published (no prevData needed)
     expect(eventBusPublisher.publish).toHaveBeenCalledWith({
       entityType: 'user',
       eventType: 'created',
       data: user,
+      actor: actor,
+    });
+  });
+
+  it('should publish updated events with prevData', async () => {
+    const oldUser = { id: '123', name: 'Old Name', email: 'old@example.com' };
+    const updatedUser = { id: '123', name: 'New Name', email: 'new@example.com' };
+    
+    await service.updateUser('123', { name: 'New Name' }, actor);
+
+    // Verify the updated event was published with required prevData
+    expect(eventBusPublisher.publish).toHaveBeenCalledWith({
+      entityType: 'user',
+      eventType: 'updated',
+      data: updatedUser,
+      prevData: oldUser, // Required for updated events
       actor: actor,
     });
   });
@@ -601,6 +703,7 @@ interface PublishEventOptions<T = unknown> {
   entityType: string;    // Entity type (e.g., 'user', 'product')
   eventType: EventType;  // Event type (e.g., 'created', 'updated')
   data: T;               // Event payload
+  prevData?: T;          // Previous entity state (required for 'updated'/'deleted')
   actor: Actor;          // Actor information
   version?: string;      // Schema version (default: 'v1')
   domain?: string;       // Domain override
