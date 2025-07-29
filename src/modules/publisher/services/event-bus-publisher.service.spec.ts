@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EventBusPublisher } from './event-bus-publisher.service';
 import { AmqpConnectionService } from './amqp-connection.service';
+import { ActorType } from '@vcita/oauth-client-nestjs/dist/oauth/enums';
 
 describe('EventBusPublisher', () => {
   let service: EventBusPublisher;
@@ -37,8 +38,9 @@ describe('EventBusPublisher', () => {
 
   describe('publish', () => {
     const mockActor = {
+      uid: 'user-123',
       id: 'user-123',
-      type: 'user',
+      type: ActorType.USER,
       email: 'test@example.com',
     };
 
@@ -57,8 +59,8 @@ describe('EventBusPublisher', () => {
         const publishCall = mockChannelWrapper.publish.mock.calls[0];
         const [exchange, routingKey, payload, options] = publishCall;
 
-        expect(exchange).toBe('event_bus'); // Default exchange from config
-        expect(routingKey).toMatch(/\.user\.created$/);
+        expect(exchange).toBe('test_event_bus'); // Test exchange from config
+        expect(routingKey).toBe('test-domain.user.created');
         expect(payload.data).toEqual(publishOptions.data);
         expect(payload.prev_data).toBeUndefined();
         expect(options.persistent).toBe(true);
@@ -99,8 +101,8 @@ describe('EventBusPublisher', () => {
         const publishCall = mockChannelWrapper.publish.mock.calls[0];
         const [exchange, routingKey, payload] = publishCall;
 
-        expect(exchange).toBe('event_bus');
-        expect(routingKey).toMatch(/\.user\.updated$/);
+        expect(exchange).toBe('test_event_bus');
+        expect(routingKey).toBe('test-domain.user.updated');
         expect(payload.data).toEqual(publishOptions.data);
         expect(payload.prev_data).toEqual(publishOptions.prevData);
       });
@@ -135,8 +137,8 @@ describe('EventBusPublisher', () => {
         const publishCall = mockChannelWrapper.publish.mock.calls[0];
         const [exchange, routingKey, payload] = publishCall;
 
-        expect(exchange).toBe('event_bus');
-        expect(routingKey).toMatch(/\.user\.deleted$/);
+        expect(exchange).toBe('test_event_bus');
+        expect(routingKey).toBe('test-domain.user.deleted');
         expect(payload.data).toEqual(publishOptions.data);
         expect(payload.prev_data).toEqual(publishOptions.prevData);
       });

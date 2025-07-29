@@ -1,10 +1,12 @@
 import { EventBuilder } from './event-builder.util';
 import { PublishEventOptions } from '../../../interfaces/event.interface';
+import { ActorType } from '@vcita/oauth-client-nestjs/dist/oauth/enums';
 
 describe('EventBuilder', () => {
   const mockActor = {
+    uid: 'user-123',
     id: 'user-123',
-    type: 'user',
+    type: ActorType.USER,
     email: 'test@example.com',
   };
 
