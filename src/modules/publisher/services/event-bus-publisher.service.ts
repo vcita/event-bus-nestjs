@@ -29,6 +29,7 @@ export class EventBusPublisher<T = unknown> {
    * @param options.eventType - The type of event being published
    *   (e.g., 'created', 'updated', 'deleted')
    * @param options.data - The actual event data/payload to be published
+   * @param options.prevData - The previous state of the entity (required for 'updated' and 'deleted' events)
    * @param options.actor - Information about who/what triggered this event
    * @param options.version - Optional schema version for the event
    *   (defaults to service configuration)
@@ -46,11 +47,20 @@ export class EventBusPublisher<T = unknown> {
    *
    * @example
    * ```typescript
-   * // Publishing a resource created event
+   * // Publishing an entity (resource entity) created event
    * await eventBusPublisher.publish({
    *   entityType: 'resource',
    *   eventType: 'created',
    *   data: { id: '123', name: 'Meeting Room A', type: 'room' },
+   *   actor: auth.actor,
+   * });
+   * 
+   * // Publishing an entity (resource entity) updated event with previous state
+   * await eventBusPublisher.publish({
+   *   entityType: 'resource',
+   *   eventType: 'updated',
+   *   data: { id: '123', name: 'Meeting Room B', type: 'room' },
+   *   prevData: { id: '123', name: 'Meeting Room A', type: 'room' },
    *   actor: auth.actor,
    * });
    */
@@ -99,10 +109,10 @@ export class EventBusPublisher<T = unknown> {
   }
 
   /**
-   * Validates the publish options
+   * Validates the publish options and provides guidance for prevData usage
    */
   private static validatePublishOptions(options: PublishEventOptions): void {
-    const { entityType, eventType, data, actor } = options;
+    const { entityType, eventType, data, prevData, actor } = options;
 
     if (!entityType?.trim()) {
       throw new Error('entityType is required and cannot be empty');
@@ -118,6 +128,11 @@ export class EventBusPublisher<T = unknown> {
 
     if (!actor) {
       throw new Error('actor is required');
+    }
+
+    // Guidance for prevData usage
+    if (eventType !== 'created' && prevData === undefined) {
+      throw new Error('prevData is required');
     }
   }
 }
