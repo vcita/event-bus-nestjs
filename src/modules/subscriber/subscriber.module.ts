@@ -18,7 +18,7 @@ import { eventBusConfig } from '../../configuration';
         enabled: false,
       },
     }),
-    ...(process.env.NODE_ENV !== 'test'
+    ...(process.env.NODE_ENV !== 'test' && process.env.DISABLE_EVENT_BUS !== 'true'
       ? [
           RabbitMQModule.forRoot(RabbitMQModule, {
             uri: eventBusConfig.rabbitmqDsn,
