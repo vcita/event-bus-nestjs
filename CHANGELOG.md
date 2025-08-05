@@ -6,11 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 # Unreleased
-### Fixed
-- **Environment Control**: Fixed `DISABLE_EVENT_BUS` environment variable to properly disable RabbitMQ module import in SubscriberModule, completing the event bus disable functionality
 
 ---
 # Releases 
+
+## 1.0.3 (2025-08-05)
+### Fixed
+- **Environment Control**: Fixed `DISABLE_EVENT_BUS` environment variable to properly disable RabbitMQ module import in SubscriberModule, completing the event bus disable functionality
 
 ## 1.0.2 (2025-07-17)
 ### Changed
