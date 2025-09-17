@@ -13,7 +13,7 @@ import { EventBusDecoratorUtils } from '../../../utils/event-bus-decorator.utils
 
 /**
  * Thin decorator for subscribing to event bus messages with standardized routing.
- * Expected method signature: (auth: AuthorizationPayloadEntity, userData: EventPayload<T>, prevUserData: EventPayload<T>, headers: EventHeaders) => Promise<void>
+ * Expected method signature: (auth: AuthorizationPayloadEntity, eventPayload: EventPayload<T>, headers: EventHeaders) => Promise<void>
  *
  * @param options - Configuration options for the subscription
  *
@@ -31,12 +31,11 @@ import { EventBusDecoratorUtils } from '../../../utils/event-bus-decorator.utils
  *   })
  *   async handleProductCreated(
  *     auth: AuthorizationPayloadEntity,
- *     productData: EventPayload<ProductData>,
- *     prevProductData: EventPayload<ProductData>,
+ *     eventPayload: EventPayload<ProductData>,
  *     headers: EventHeaders,
  *   ): Promise<void> {
- *     // For 'created' events, prevProductData will be undefined
- *     // For 'updated'/'deleted' events, prevProductData contains previous state
+ *     const currentData = eventPayload.data;
+ *     const previousData = eventPayload.prev_data; // undefined for 'created' events
  *   }
  * }
  * ```
@@ -83,22 +82,7 @@ export function SubscribeTo(options: SubscribeToOptions) {
       const headers = amqpMsg.properties.headers || {};
       const actor = plainToActor(headers.actor) as ActorEntity;
       const auth = new AuthorizationPayloadEntity(null, actor);
-
-      // Extract current data and previous data as separate EventPayload objects
-      const currentData: EventPayload<unknown> = {
-        data: event.data,
-        schema_ref: event.schema_ref,
-      };
-
-      const previousData: EventPayload<unknown> | undefined = event.prev_data 
-        ? {
-            data: event.prev_data,
-            schema_ref: event.schema_ref, // Same schema for previous data
-          }
-        : undefined;
-
-      // Call original handler with separate parameters: (auth, currentData, previousData, headers)
-      return originalEventHandler.call(this, auth, currentData, previousData, headers);
+      return originalEventHandler.call(this, auth, event, headers);
     };
 
     const metadata: EventBusSubscriberMetadata = {

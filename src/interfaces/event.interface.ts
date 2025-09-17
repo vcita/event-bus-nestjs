@@ -43,7 +43,7 @@ export interface PublishEventOptions<T = unknown> {
   entityType: string;
   eventType: EventType;
   data: T;
-  prevData?: T; // Previous entity state for updated/deleted events
+  prevData?: T;
   actor: Actor;
   version?: string;
   domain?: string;

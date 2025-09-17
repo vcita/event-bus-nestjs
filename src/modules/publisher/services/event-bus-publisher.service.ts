@@ -29,7 +29,7 @@ export class EventBusPublisher<T = unknown> {
    * @param options.eventType - The type of event being published
    *   (e.g., 'created', 'updated', 'deleted')
    * @param options.data - The actual event data/payload to be published
-   * @param options.prevData - The previous state of the entity (required for 'updated' and 'deleted' events)
+   * @param options.prevData - The previous state of the entity (required for 'updated' events, optional for others)
    * @param options.actor - Information about who/what triggered this event
    * @param options.version - Optional schema version for the event
    *   (defaults to service configuration)
@@ -131,7 +131,7 @@ export class EventBusPublisher<T = unknown> {
     }
 
     // Guidance for prevData usage
-    if (eventType !== 'created' && prevData === undefined) {
+    if (eventType === 'updated' && prevData === undefined) {
       throw new Error('prevData is required');
     }
   }

@@ -66,7 +66,7 @@ describe('EventBusPublisher', () => {
         expect(options.persistent).toBe(true);
       });
 
-      it('should allow prevData for created events (unusual but not forbidden)', async () => {
+      it('should allow prevData for created events', async () => {
         // Capture console.warn to verify warning is logged
         const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
 
@@ -143,17 +143,25 @@ describe('EventBusPublisher', () => {
         expect(payload.prev_data).toEqual(publishOptions.prevData);
       });
 
-      it('should throw error when prevData is missing for deleted events', async () => {
+      it('should publish deleted events without prevData (prevData is optional)', async () => {
         const publishOptions = {
           entityType: 'user',
           eventType: 'deleted',
           data: { id: '123' },
-          // prevData is missing - should throw error
+          // prevData is optional for deleted events
           actor: mockActor,
         };
 
-        await expect(service.publish(publishOptions)).rejects.toThrow('prevData is required');
-        expect(mockChannelWrapper.publish).not.toHaveBeenCalled();
+        await service.publish(publishOptions);
+
+        expect(mockChannelWrapper.publish).toHaveBeenCalledTimes(1);
+        const publishCall = mockChannelWrapper.publish.mock.calls[0];
+        const [exchange, routingKey, payload] = publishCall;
+
+        expect(exchange).toBe('test_event_bus');
+        expect(routingKey).toBe('test-domain.user.deleted');
+        expect(payload.data).toEqual(publishOptions.data);
+        expect(payload.prev_data).toBeUndefined();
       });
     });
 
