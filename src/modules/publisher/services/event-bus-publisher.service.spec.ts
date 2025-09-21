@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ActorType } from '@vcita/oauth-client-nestjs/dist/oauth/enums';
 import { EventBusPublisher } from './event-bus-publisher.service';
 import { AmqpConnectionService } from './amqp-connection.service';
-import { ActorType } from '@vcita/oauth-client-nestjs/dist/oauth/enums';
 
 describe('EventBusPublisher', () => {
   let service: EventBusPublisher;
@@ -174,7 +174,9 @@ describe('EventBusPublisher', () => {
           actor: mockActor,
         };
 
-        await expect(service.publish(publishOptions)).rejects.toThrow('entityType is required and cannot be empty');
+        await expect(service.publish(publishOptions)).rejects.toThrow(
+          'entityType is required and cannot be empty',
+        );
       });
 
       it('should throw error when eventType is missing', async () => {
@@ -185,7 +187,9 @@ describe('EventBusPublisher', () => {
           actor: mockActor,
         };
 
-        await expect(service.publish(publishOptions)).rejects.toThrow('eventType is required and cannot be empty');
+        await expect(service.publish(publishOptions)).rejects.toThrow(
+          'eventType is required and cannot be empty',
+        );
       });
 
       it('should throw error when data is missing', async () => {
@@ -226,7 +230,7 @@ describe('EventBusPublisher', () => {
 
         const publishCall = mockChannelWrapper.publish.mock.calls[0];
         const [, , , options] = publishCall;
-        const headers = options.headers;
+        const { headers } = options;
 
         expect(headers.entity_type).toBe('user');
         expect(headers.event_type).toBe('created');
@@ -257,4 +261,4 @@ describe('EventBusPublisher', () => {
       });
     });
   });
-}); 
+});

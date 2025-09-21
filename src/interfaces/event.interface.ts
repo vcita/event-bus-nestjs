@@ -34,7 +34,10 @@ export interface Event<T = unknown> {
   payload: EventPayload<T>;
 }
 
-export type EventType = 'created' | 'updated' | 'deleted' | string;
+export const ALLOWED_EVENT_TYPES = ['created', 'read', 'updated', 'deleted'] as const;
+
+export type StandardEventType = (typeof ALLOWED_EVENT_TYPES)[number];
+export type EventType = StandardEventType | string;
 
 /**
  * Options for publishing events

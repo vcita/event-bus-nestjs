@@ -1,6 +1,6 @@
+import { ActorType } from '@vcita/oauth-client-nestjs/dist/oauth/enums';
 import { EventBuilder } from './event-builder.util';
 import { PublishEventOptions } from '../../../interfaces/event.interface';
-import { ActorType } from '@vcita/oauth-client-nestjs/dist/oauth/enums';
 
 describe('EventBuilder', () => {
   const mockActor = {
@@ -71,7 +71,7 @@ describe('EventBuilder', () => {
         'complex-entity',
         complexData,
         complexPrevData,
-        'v1'
+        'v1',
       );
 
       expect(payload.data).toEqual(complexData);
@@ -176,7 +176,7 @@ describe('EventBuilder', () => {
 
       expect(event.headers.timestamp).toBeDefined();
       expect(new Date(event.headers.timestamp).getTime()).toBeGreaterThan(0);
-      
+
       // Should be a valid ISO string
       expect(() => new Date(event.headers.timestamp).toISOString()).not.toThrow();
     });
@@ -194,10 +194,12 @@ describe('EventBuilder', () => {
     });
 
     it('should build routing key for different domains', () => {
-      expect(EventBuilder.buildRoutingKey('billing', 'subscription', 'expired'))
-        .toBe('billing.subscription.expired');
-      expect(EventBuilder.buildRoutingKey('inventory', 'product', 'stock-updated'))
-        .toBe('inventory.product.stock-updated');
+      expect(EventBuilder.buildRoutingKey('billing', 'subscription', 'expired')).toBe(
+        'billing.subscription.expired',
+      );
+      expect(EventBuilder.buildRoutingKey('inventory', 'product', 'stock-updated')).toBe(
+        'inventory.product.stock-updated',
+      );
     });
   });
 
@@ -209,7 +211,7 @@ describe('EventBuilder', () => {
         mockActor,
         'test-service',
         'trace-123',
-        'v1'
+        'v1',
       );
 
       expect(headers).toMatchObject({
@@ -227,4 +229,4 @@ describe('EventBuilder', () => {
       expect(typeof headers.timestamp).toBe('string');
     });
   });
-}); 
+});
