@@ -137,12 +137,11 @@ export class UserSubscriber {
   })
   async handleUserCreated(
     auth: AuthorizationPayloadEntity,
-    userData: EventPayload<{ id: string; email: string }>,
-    prevUserData: EventPayload<{ id: string; email: string }>,
+    eventPayload: EventPayload<{ id: string; email: string }>,
     headers: EventHeaders,
   ): Promise<void> {
-    this.logger.log(`User created: ${userData.data.id} by ${auth.actor.id}`);
-    // For 'created' events, prevUserData will be undefined
+    this.logger.log(`User created: ${eventPayload.data.id} by ${auth.actor.id}`);
+    // For 'created' events, eventPayload.prev_data will likely be undefined
     // Your business logic here
   }
 }
@@ -221,7 +220,7 @@ export class MyService {
   }
 
   async publishUpdateEvent() {
-    // For updated/deleted events, include prevData to enable change detection
+    // For updated events, include prevData to enable change detection
     await this.eventBusPublisher.publish({
       entityType: 'resource',
       eventType: 'updated',
@@ -267,7 +266,7 @@ await this.eventBusPublisher.publish({
 });
 ```
 
-Subscribers can then compare `event.data` with `event.prev_data` to determine what specifically changed:
+Subscribers can access both current data via `eventPayload.data` and previous data via `eventPayload.prev_data` to determine what specifically changed:
 
 ```typescript
 @SubscribeTo({
@@ -277,12 +276,11 @@ Subscribers can then compare `event.data` with `event.prev_data` to determine wh
 })
 async handleUserUpdated(
   auth: AuthorizationPayloadEntity,
-  userData: EventPayload<UserData>,
-  prevUserData: EventPayload<UserData>,
+  eventPayload: EventPayload<UserData>,
   headers: EventHeaders,
 ): Promise<void> {
-  const currentUser = userData.data;
-  const previousUser = prevUserData?.data;
+  const currentUser = eventPayload.data;
+  const previousUser = eventPayload.prev_data;
   
   if (previousUser) {
     // Check if email changed
@@ -476,7 +474,10 @@ Every published event follows this standardized structure:
 }
 ```
 
-**Note:** The `prev_data` field is **required** for `updated` and `deleted` events. You must provide the `prevData` option when publishing these event types to enable change detection and determine if meaningful changes occurred.
+**Note:** The `prev_data` field usage varies by event type:
+- **`created` events**: `prevData` is optional (typically undefined)
+- **`updated` events**: `prevData` is **required** (validation error if missing)  
+- **`deleted` events**: `prevData` is optional but recommended for comprehensive audit trails
 
 ### Routing Keys
 
@@ -703,7 +704,7 @@ interface PublishEventOptions<T = unknown> {
   entityType: string;    // Entity type (e.g., 'user', 'product')
   eventType: EventType;  // Event type (e.g., 'created', 'updated')
   data: T;               // Event payload
-  prevData?: T;          // Previous entity state (required for 'updated'/'deleted')
+  prevData?: T;          // Previous entity state (required for 'updated', optional for others)
   actor: Actor;          // Actor information
   version?: string;      // Schema version (default: 'v1')
   domain?: string;       // Domain override

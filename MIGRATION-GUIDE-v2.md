@@ -45,7 +45,7 @@ EventBuilder.buildPayload(entityType, data, prevData, version);
 
 ### Step 1: Update Publisher Code
 
-Find all instances where you publish `updated` or `deleted` events and add the `prevData` field:
+Find all instances where you publish `updated` events and add the `prevData` field:
 
 ```typescript
 // ❌ Before - Will throw error in v2.0
@@ -135,7 +135,7 @@ expect(eventBusPublisher.publish).toHaveBeenCalledWith({
 ## 📋 Migration Checklist
 
 - [ ] **Search codebase** for `eventType: 'updated'` and add `prevData`
-- [ ] **Search codebase** for `eventType: 'deleted'` and add `prevData`
+
 - [ ] **Update service methods** to fetch current state before modifications
 - [ ] **Update test expectations** to include `prevData` fields
 - [ ] **Review error handling** for new validation errors
@@ -163,7 +163,7 @@ When migrating, you'll encounter these errors:
 Error: prevData is required
 ```
 
-**Solution:** Add `prevData` field to your publish options for `updated`/`deleted` events.
+**Solution:** Add `prevData` field to your publish options for `updated` events.
 
 ### TypeScript Compilation Errors
 ```
