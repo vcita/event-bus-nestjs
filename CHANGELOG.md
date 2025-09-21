@@ -7,11 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 # Unreleased
 
-### Fixed
-- **Exports**: Added missing `NonRetryableError` export to main package index, making it importable as documented in README examples
 
 ---
 # Releases 
+
+## 1.0.4 (2025-09-21)
+### Fixed
+- **Exports**: Added missing `NonRetryableError` export to main package index, making it importable as documented in README examples
 
 ## 1.0.3 (2025-08-05)
 ### Fixed
