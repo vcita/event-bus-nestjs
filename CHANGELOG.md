@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### BREAKING CHANGES
 - **Publisher Validation**: `prevData` is now **required** for `updated` events
   - Publishing `updated` events without `prevData` will throw an error
-  - This enables mandatory change detection for all state-changing events
+  - Event type validation now checks that event type is one of: `created`, `read`, `updated`, `deleted`
 - **EventBuilder API**: Updated `buildPayload` method signature
   - Parameter order changed: `buildPayload(entityType, data, prevData?, version?)`
   - `version` parameter now has default value of `'v1'`
