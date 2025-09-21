@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ActorType } from '@vcita/oauth-client-nestjs/dist/oauth/enums';
 import { EventBusPublisher } from './event-bus-publisher.service';
 import { AmqpConnectionService } from './amqp-connection.service';
+import { PublishEventOptions } from '../../../interfaces/event.interface';
 
 describe('EventBusPublisher', () => {
   let service: EventBusPublisher;
@@ -46,7 +47,7 @@ describe('EventBusPublisher', () => {
 
     describe('created events', () => {
       it('should publish created events without prevData', async () => {
-        const publishOptions = {
+        const publishOptions: PublishEventOptions = {
           entityType: 'user',
           eventType: 'created',
           data: { id: '123', name: 'John Doe', email: 'john@example.com' },
@@ -70,7 +71,7 @@ describe('EventBusPublisher', () => {
         // Capture console.warn to verify warning is logged
         const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
 
-        const publishOptions = {
+        const publishOptions: PublishEventOptions = {
           entityType: 'user',
           eventType: 'created',
           data: { id: '123', name: 'John Doe' },
@@ -87,7 +88,7 @@ describe('EventBusPublisher', () => {
 
     describe('updated events', () => {
       it('should publish updated events with prevData', async () => {
-        const publishOptions = {
+        const publishOptions: PublishEventOptions = {
           entityType: 'user',
           eventType: 'updated',
           data: { id: '123', name: 'John Doe Updated', email: 'john.new@example.com' },
@@ -108,7 +109,7 @@ describe('EventBusPublisher', () => {
       });
 
       it('should throw error when prevData is missing for updated events', async () => {
-        const publishOptions = {
+        const publishOptions: PublishEventOptions = {
           entityType: 'user',
           eventType: 'updated',
           data: { id: '123', name: 'John Doe Updated' },
@@ -123,7 +124,7 @@ describe('EventBusPublisher', () => {
 
     describe('deleted events', () => {
       it('should publish deleted events with prevData', async () => {
-        const publishOptions = {
+        const publishOptions: PublishEventOptions = {
           entityType: 'user',
           eventType: 'deleted',
           data: { id: '123' }, // Minimal data for deletion
@@ -144,7 +145,7 @@ describe('EventBusPublisher', () => {
       });
 
       it('should publish deleted events without prevData (prevData is optional)', async () => {
-        const publishOptions = {
+        const publishOptions: PublishEventOptions = {
           entityType: 'user',
           eventType: 'deleted',
           data: { id: '123' },
@@ -167,7 +168,7 @@ describe('EventBusPublisher', () => {
 
     describe('validation', () => {
       it('should throw error when entityType is missing', async () => {
-        const publishOptions = {
+        const publishOptions: PublishEventOptions = {
           entityType: '', // Empty entityType
           eventType: 'created',
           data: { id: '123' },
@@ -182,7 +183,7 @@ describe('EventBusPublisher', () => {
       it('should throw error when eventType is missing', async () => {
         const publishOptions = {
           entityType: 'user',
-          eventType: '', // Empty eventType
+          eventType: '' as any, // Empty eventType
           data: { id: '123' },
           actor: mockActor,
         };
@@ -195,7 +196,7 @@ describe('EventBusPublisher', () => {
       it('should throw error when data is missing', async () => {
         const publishOptions = {
           entityType: 'user',
-          eventType: 'created',
+          eventType: 'created' as any,
           data: null, // Null data
           actor: mockActor,
         };
@@ -206,7 +207,7 @@ describe('EventBusPublisher', () => {
       it('should throw error when actor is missing', async () => {
         const publishOptions = {
           entityType: 'user',
-          eventType: 'created',
+          eventType: 'created' as any,
           data: { id: '123' },
           actor: null, // Null actor
         };
@@ -217,7 +218,7 @@ describe('EventBusPublisher', () => {
 
     describe('event structure', () => {
       it('should include correct headers in published event', async () => {
-        const publishOptions = {
+        const publishOptions: PublishEventOptions = {
           entityType: 'user',
           eventType: 'created',
           data: { id: '123', name: 'John Doe' },
@@ -243,7 +244,7 @@ describe('EventBusPublisher', () => {
       });
 
       it('should use custom domain in routing key', async () => {
-        const publishOptions = {
+        const publishOptions: PublishEventOptions = {
           entityType: 'product',
           eventType: 'updated',
           data: { id: '456', name: 'Product Updated' },

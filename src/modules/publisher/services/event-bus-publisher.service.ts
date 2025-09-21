@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InfraLoggerService } from '@vcita/infra-nestjs';
 import { Options } from 'amqplib';
-import { PublishEventOptions, ALLOWED_EVENT_TYPES } from '../../../interfaces/event.interface';
+import { PublishEventOptions } from '../../../interfaces/event.interface';
 import { eventBusConfig } from '../../../configuration';
 import { AmqpConnectionService } from './amqp-connection.service';
 import { EventBuilder } from '../utils/event-builder.util';
@@ -122,10 +122,6 @@ export class EventBusPublisher<T = unknown> {
       throw new Error('eventType is required and cannot be empty');
     }
 
-    if (!ALLOWED_EVENT_TYPES.includes(eventType as any)) {
-      throw new Error(`eventType must be one of: ${ALLOWED_EVENT_TYPES.join(', ')}`);
-    }
-
     if (data === undefined || data === null) {
       throw new Error('data is required');
     }
@@ -135,7 +131,7 @@ export class EventBusPublisher<T = unknown> {
     }
 
     // Guidance for prevData usage
-    if (eventType === 'updated' && prevData === undefined) {
+    if (eventType === 'updated' && (prevData === undefined || prevData === null)) {
       throw new Error('prevData is required');
     }
   }
