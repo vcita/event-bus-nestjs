@@ -1,6 +1,6 @@
 {
   "name": "@vcita/event-bus-nestjs",
-  "version": "1.0.4",
+  "version": "2.0.0",
   "description": "Event Bus for NestJS applications with AMQP support",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -67,7 +67,9 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
-    "setupFilesAfterEnv": ["<rootDir>/../jest.setup.js"]
+    "setupFilesAfterEnv": [
+      "<rootDir>/../jest.setup.js"
+    ]
   },
   "repository": {
     "type": "git",

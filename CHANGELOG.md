@@ -5,9 +5,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
-# Unreleased
+# Releases 
 
-## 2.0.0 (TBD)
+## 2.0.0 (2025-09-28)
 ### BREAKING CHANGES
 - **Publisher Validation**: `prevData` is now **required** for `updated` events
   - Publishing `updated` events without `prevData` will throw an error
@@ -24,9 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Validation Messages**: Updated JSDoc comments to reflect required `prevData` for non-created events
 - **Error Handling**: Stricter validation with clear error messages for missing `prevData`
-
----
-# Releases 
 
 ## 1.0.4 (2025-09-21)
 ### Fixed
