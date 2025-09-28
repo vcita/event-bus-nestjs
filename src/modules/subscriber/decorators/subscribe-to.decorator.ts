@@ -13,7 +13,7 @@ import { EventBusDecoratorUtils } from '../../../utils/event-bus-decorator.utils
 
 /**
  * Thin decorator for subscribing to event bus messages with standardized routing.
- * Expected method signature: (actor: AuthorizationPayloadEntity, event: EventPayload<T>, headers: EventHeaders) => Promise<void>
+ * Expected method signature: (auth: AuthorizationPayloadEntity, eventPayload: EventPayload<T>, headers: EventHeaders) => Promise<void>
  *
  * @param options - Configuration options for the subscription
  *
@@ -30,11 +30,12 @@ import { EventBusDecoratorUtils } from '../../../utils/event-bus-decorator.utils
  *     action: 'created',
  *   })
  *   async handleProductCreated(
- *     actor: AuthorizationPayloadEntity,
- *     event: EventPayload<ProductData>,
+ *     auth: AuthorizationPayloadEntity,
+ *     eventPayload: EventPayload<ProductData>,
  *     headers: EventHeaders,
  *   ): Promise<void> {
- *     // Implementation
+ *     const currentData = eventPayload.data;
+ *     const previousData = eventPayload.prev_data; // undefined for 'created' events
  *   }
  * }
  * ```
@@ -81,8 +82,6 @@ export function SubscribeTo(options: SubscribeToOptions) {
       const headers = amqpMsg.properties.headers || {};
       const actor = plainToActor(headers.actor) as ActorEntity;
       const auth = new AuthorizationPayloadEntity(null, actor);
-
-      // All business logic is handled by the interceptor
       return originalEventHandler.call(this, auth, event, headers);
     };
 

@@ -22,6 +22,7 @@ export interface EventHeaders {
  */
 export interface EventPayload<T = unknown> {
   data: T;
+  prev_data?: T; // Previous entity state for updated/deleted events
   schema_ref: string;
 }
 
@@ -33,15 +34,18 @@ export interface Event<T = unknown> {
   payload: EventPayload<T>;
 }
 
-export type EventType = 'created' | 'updated' | 'deleted' | string;
+export const PUBLISH_EVENT_TYPES = ['created', 'read', 'updated', 'deleted'] as const;
+export type PublishEventType = (typeof PUBLISH_EVENT_TYPES)[number];
+export type EventType = PublishEventType | '*';
 
 /**
  * Options for publishing events
  */
 export interface PublishEventOptions<T = unknown> {
   entityType: string;
-  eventType: EventType;
+  eventType: PublishEventType;
   data: T;
+  prevData?: T;
   actor: Actor;
   version?: string;
   domain?: string;

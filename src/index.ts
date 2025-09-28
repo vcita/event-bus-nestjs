@@ -6,6 +6,7 @@ export { EventBusPublisher } from './modules/publisher/services/event-bus-publis
 // Interface exports
 export {
   EventType,
+  PublishEventType,
   Actor,
   EventHeaders,
   EventPayload,

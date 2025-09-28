@@ -35,13 +35,25 @@ export class EventBuilder {
   }
 
   /**
-   * Builds event payload with data and schema reference
+   * Builds event payload with data, optional previous data, and schema reference
    */
-  static buildPayload<T>(data: T, entityType: string, version: string): EventPayload<T> {
-    return {
+  static buildPayload<T>(
+    entityType: string,
+    data: T,
+    prevData?: T,
+    version: string = 'v1',
+  ): EventPayload<T> {
+    const payload: EventPayload<T> = {
       data,
       schema_ref: `${entityType}@${version}`,
     };
+
+    // Include previous data if provided (typically for updated/deleted events)
+    if (prevData !== undefined) {
+      payload.prev_data = prevData;
+    }
+
+    return payload;
   }
 
   /**
@@ -52,7 +64,7 @@ export class EventBuilder {
     sourceService: string,
     traceId: string,
   ): Event<T> {
-    const { entityType, eventType, data, actor, version = 'v1' } = options;
+    const { entityType, eventType, data, prevData, actor, version = 'v1' } = options;
 
     const headers = this.buildHeaders(
       entityType,
@@ -63,7 +75,7 @@ export class EventBuilder {
       version,
     );
 
-    const payload = this.buildPayload(data, entityType, version);
+    const payload = this.buildPayload(entityType, data, prevData, version);
 
     return { headers, payload };
   }

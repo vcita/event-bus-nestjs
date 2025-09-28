@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getToken } from '@willsoto/nestjs-prometheus';
 import { Counter, Histogram } from 'prom-client';
 import { EventBusMetricsService } from './event-bus-metrics.service';
+import { EventBusSubscriberMetadata } from '../../../interfaces/subscription.interface';
 
 describe('EventBusMetricsService', () => {
   let service: EventBusMetricsService;
@@ -9,23 +10,23 @@ describe('EventBusMetricsService', () => {
   let processingDurationHistogram: Histogram<string>;
   let validationFailuresCounter: Counter<string>;
 
-  const mockMetadata = {
+  const mockMetadata: EventBusSubscriberMetadata = {
     queueName: 'availability.slot.created',
     eventType: 'standard' as const,
     options: {
       domain: 'availability',
       entity: 'slot',
-      action: 'created',
+      action: 'created' as const,
     },
   };
 
-  const mockMetadataWithWildcards = {
+  const mockMetadataWithWildcards: EventBusSubscriberMetadata = {
     queueName: 'availability.*.created',
     eventType: 'standard' as const,
     options: {
       domain: 'availability',
       entity: '*',
-      action: 'created',
+      action: 'created' as const,
     },
   };
 
