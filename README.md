@@ -9,14 +9,14 @@ A comprehensive NestJS module for publishing and subscribing to standardized eve
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
 - [Publishing Events](#publishing-events)
-- [Subscribing to Events](#subscribing-to-events)
+- [Consuming Events](#consuming-events)
+- [Legacy Event Subscription](#legacy-event-subscription)
 - [Event Structure](#event-structure)
 - [Error Handling & Retries](#error-handling--retries)
 - [Testing](#testing)
+- [Migration to v2.0.0](#migration-to-v200)
 - [Environment Variables](#environment-variables)
-- [Advanced Usage](#advanced-usage)
-- [API Reference](#api-reference)
-- [Further Reading](https://myvcita.atlassian.net/wiki/spaces/IT/pages/3833626768/Event+Bus+Architecture+-+Documentation)
+- [Further Reading](https://myvcita.atlassian.net/wiki/spaces/IT/pages/3962175720/TypeScript+NestJS)
 
 ## Features
 
@@ -33,7 +33,7 @@ A comprehensive NestJS module for publishing and subscribing to standardized eve
 ## Installation
 
 ```bash
-npm install @vcita/event-bus-nestjs
+npm install @vcita/event-bus-nestjs@^2.0.0
 ```
 
 **Required Peer Dependencies:**
@@ -43,7 +43,21 @@ npm install @nestjs/common @nestjs/core @vcita/infra-nestjs @vcita/oauth-client-
 
 ## Quick Start
 
-### 1. Import the Modules
+### 1. Set Environment Variables
+
+Set the `EVENT_BUS_DEFAULT_DOMAIN` environment variable to the domain which the entities for which events are sent belong to:
+
+In `shipit.yml`:
+```yaml
+helm_values:
+  default:
+    global:
+      deployment:
+        env:
+          EVENT_BUS_DEFAULT_DOMAIN: scheduling
+```
+
+### 2. Import the Modules
 
 You can import the modules individually based on your needs:
 
@@ -90,350 +104,449 @@ import { PublisherModule, SubscriberModule } from '@vcita/event-bus-nestjs';
 export class AppModule {}
 ```
 
-### 2. Publish an Event
+### 3. Publish an Event
 
 ```typescript
-// my.service.ts
+// resource.service.ts
 import { Injectable } from '@nestjs/common';
 import { EventBusPublisher } from '@vcita/event-bus-nestjs';
+import { AuthorizationPayloadEntity } from '@vcita/oauth-client-nestjs';
 
 @Injectable()
-export class UserService {
-  constructor(private readonly eventBusPublisher: EventBusPublisher) {}
+export class ResourceService {
+  constructor(private readonly eventBusPublisher: EventBusPublisher<ResourceData>) {}
 
-  async createUser(userData: any, actor: any) {
-    const user = await this.saveUser(userData);
+  async createResource(resourceData: ResourceData, actor: AuthorizationPayloadEntity): Promise<void> {
+    // Business logic to create resource
+    const resourceEntity = await this.someMethod(resourceData);
 
-    // Publish event - routing key will be: scheduling.user.created
+    // Publish event - routing key will be: scheduling.resource.created
     await this.eventBusPublisher.publish({
-      entityType: 'user',
+      entityType: 'resource',
       eventType: 'created',
-      data: user,
-      actor: actor,
+      domain: 'scheduling',
+      data: resourceEntity,
+      actor: actor.actor
     });
-
-    return user;
   }
 }
 ```
 
-### 3. Subscribe to Events
+### 4. Subscribe to Events
 
 ```typescript
-// user.subscriber.ts
+// resource.subscriber.ts
 import { Injectable } from '@nestjs/common';
 import { AuthorizationPayloadEntity } from '@vcita/oauth-client-nestjs';
 import { InfraLoggerService } from '@vcita/infra-nestjs';
 import { SubscribeTo, EventPayload, EventHeaders } from '@vcita/event-bus-nestjs';
 
 @Injectable()
-export class UserSubscriber {
-  private readonly logger = new InfraLoggerService(UserSubscriber.name);
+export class ResourceSubscriber {
+  private readonly logger = new InfraLoggerService(ResourceSubscriber.name);
 
   @SubscribeTo({
     domain: 'scheduling',
-    entity: 'user',
-    action: 'created',
+    entity: 'resource',
+    action: 'created'
   })
-  async handleUserCreated(
-    auth: AuthorizationPayloadEntity,
-    eventPayload: EventPayload<{ id: string; email: string }>,
-    headers: EventHeaders,
+  async handleResourceCreated(
+    actor: AuthorizationPayloadEntity,
+    event: EventPayload<ResourceData>,
+    headers: EventHeaders
   ): Promise<void> {
-    this.logger.log(`User created: ${eventPayload.data.id} by ${auth.actor.id}`);
-    // For 'created' events, eventPayload.prev_data will likely be undefined
+    this.logger.log(`Resource created: ${event.data.id}`);
     // Your business logic here
   }
 }
 ```
 
-Don't forget to register your subscriber in your module:
-
-```typescript
-// app.module.ts
-import { Module } from '@nestjs/common';
-import { SubscriberModule } from '@vcita/event-bus-nestjs';
-import { UserSubscriber } from './user.subscriber';
-
-@Module({
-  imports: [SubscriberModule],
-  providers: [UserSubscriber], // Add your subscribers here
-})
-export class AppModule {}
-```
-
+Don't forget to register your subscriber in your module.
 ## Configuration
 
-The module uses environment variables for configuration. The configuration is automatically loaded from the environment variables when the module is imported.
+The module uses environment variables for configuration. You can configure these in the `shipit.yml` file of your service:
+
+### Required Configuration
+
+```yaml
+# Required - these should already exist in your service
+# You can check for these in the shipit.yml file or in the container
+RABBITMQ_DSN: amqp://user:password@localhost:5672
+APP_NAME: your-service-name
+```
+
+### Optional Configuration
+
+```yaml
+# Optional - will be used as the default domain when publishing events
+EVENT_BUS_DEFAULT_DOMAIN: scheduling
+
+# Optional - Event bus configuration
+EVENT_BUS_EXCHANGE_NAME: event_bus  # DANGER! DON'T change this unless you know what you're doing
+DISABLE_EVENT_BUS: false  # Set to 'true' to disable subscriptions
+EVENT_BUS_DEFAULT_MAX_RETRIES: 1
+EVENT_BUS_DEFAULT_RETRY_DELAY_MS: 10000
+
+# Optional - Legacy event bus configuration
+LEGACY_EVENT_BUS_EXCHANGE: vcita.model_updates  # Default: vcita.model_updates
+```
 
 ### Configuration Options
-
-The module reads configuration from the following environment variables:
 
 | Environment Variable | Type | Required | Description | Default |
 |---------------------|------|----------|-------------|---------|
 | `RABBITMQ_DSN` | string | ✅ | RabbitMQ connection string | - |
 | `APP_NAME` | string | ✅ | Your service name (used for queues and source service) | - |
-| `EVENT_BUS_EXCHANGE_NAME` | string | ❌ | RabbitMQ exchange name for standard events | `event_bus` |
 | `EVENT_BUS_DEFAULT_DOMAIN` | string | ❌ | Default domain for routing keys | `default` |
-| `EVENT_BUS_LEGACY_EXCHANGE` | string | ❌ | Exchange name for legacy events | `vcita.model_updates` |
+| `EVENT_BUS_EXCHANGE_NAME` | string | ❌ | RabbitMQ exchange name for standard events | `event_bus` |
+| `DISABLE_EVENT_BUS` | boolean | ❌ | Disable event bus functionality (useful for testing) | `false` |
 | `EVENT_BUS_DEFAULT_MAX_RETRIES` | number | ❌ | Default retry count | `1` |
 | `EVENT_BUS_DEFAULT_RETRY_DELAY_MS` | number | ❌ | Default retry delay in milliseconds | `10000` |
-
-### Example Configuration
-
-Set these environment variables in your `.env` file or deployment environment:
-
-```bash
-# Required
-RABBITMQ_DSN=amqp://username:password@localhost:5672
-APP_NAME=my-service
-
-# Optional
-EVENT_BUS_EXCHANGE_NAME=event_bus
-EVENT_BUS_DEFAULT_DOMAIN=scheduling
-EVENT_BUS_LEGACY_EXCHANGE=vcita.model_updates
-EVENT_BUS_DEFAULT_MAX_RETRIES=1
-EVENT_BUS_DEFAULT_RETRY_DELAY_MS=10000
-```
+| `LEGACY_EVENT_BUS_EXCHANGE` | string | ❌ | Exchange name for legacy events | `vcita.model_updates` |
 
 ## Publishing Events
+
+Publishing events uses the `EventBusPublisher` service with NestJS dependency injection. Events are published to the `event_bus` RabbitMQ topic exchange.
+
+### Interface Definitions
+
+```typescript
+// Event publishing options
+interface PublishEventOptions<T = unknown> {
+  entityType: string;        // Type of entity (e.g., "resource", "order")
+  eventType: PublishEventType; // Action performed (e.g., "created", "read", "updated", "deleted")
+  data: T;                   // Typed business data
+  prevData?: T;              // Typed previous data - required for 'updated' events
+  actor: Actor;              // User/system that triggered the event
+  version?: string;          // Schema version (defaults to "v1")
+  domain?: string;           // Event domain (uses configured default if omitted)
+}
+
+// Actor information
+type Actor = BaseActor & Partial<ActorEntity>;
+
+// Event types
+export type PublishEventType = 'created' | 'read' | 'updated' | 'deleted';
+```
+
+**Possible event types** are `created`, `read`, `updated` and `deleted`.
 
 ### Basic Publishing
 
 ```typescript
+import { Injectable } from '@nestjs/common';
 import { EventBusPublisher } from '@vcita/event-bus-nestjs';
+import { AuthorizationPayloadEntity } from '@vcita/oauth-client-nestjs';
 
 @Injectable()
-export class MyService {
-  constructor(private readonly eventBusPublisher: EventBusPublisher) {}
+export class ResourceService {
+  constructor(private readonly eventBusPublisher: EventBusPublisher<ResourceData>) {}
 
-  async publishEvent() {
+  async createResource(resourceData: ResourceData, actor: AuthorizationPayloadEntity): Promise<void> {
+    // Business logic to create resource
+    const resourceEntity = await this.someMethod(resourceData);
+
+    // Publish event
     await this.eventBusPublisher.publish({
-      entityType: 'resource',      // Required: Entity type
-      eventType: 'created',        // Required: Event type
-      data: { id: '123', name: 'Resource Name' }, // Required: Event data
-      actor: { id: 'user-1', type: 'user' },      // Required: Actor who triggered the event
-      version: 'v2',               // Optional: Schema version (default: 'v1')
-      domain: 'payments',          // Optional: Domain override (default: from config)
+      entityType: 'resource',
+      eventType: 'created',
+      domain: 'scheduling',
+      data: resourceEntity,
+      actor: actor.actor
     });
   }
+}
+```
 
-  async publishUpdateEvent() {
-    // For updated events, include prevData to enable change detection
+### Entity Updated Events
+
+When publishing events of type `updated`, you **must** also supply the `prevData` parameter containing the entity data before it was updated:
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { EventBusPublisher } from '@vcita/event-bus-nestjs';
+import { AuthorizationPayloadEntity } from '@vcita/oauth-client-nestjs';
+
+@Injectable()
+export class ResourceService {
+  constructor(private readonly eventBusPublisher: EventBusPublisher<ResourceData>) {}
+
+  async updateResource(
+    resourceId: string,
+    updates: Partial<ResourceData>,
+    actor: AuthorizationPayloadEntity
+  ): Promise<void> {
+    const oldResource = await this.fetchResource(resourceId);
+    const updatedResource = await this.performUpdate(resourceId, updates);
+
     await this.eventBusPublisher.publish({
       entityType: 'resource',
       eventType: 'updated',
-      data: { id: '123', name: 'Updated Resource Name', status: 'active' },
-      prevData: { id: '123', name: 'Resource Name', status: 'inactive' }, // Previous state
-      actor: { id: 'user-1', type: 'user' },
+      data: updatedResource,
+      prevData: oldResource,  // Required for updated events
+      actor: actor.actor,
+      domain: 'scheduling',   // Optional: defaults to configured EVENT_BUS_DEFAULT_DOMAIN
+      version: 'v2'           // Optional: defaults to 'v1'
     });
   }
 }
 ```
 
-### Event Types
+### Error Handling
 
-Common event types include:
-- `created` - Entity was created
-- `updated` - Entity was updated
-- `deleted` - Entity was deleted
-
-You can also use custom event types as needed.
-
-### Change Detection with Previous Entity State
-
-For `updated` and `deleted` events, you **must** include the previous state of the entity to enable subscribers to detect meaningful changes:
+The publisher automatically validates input and throws descriptive errors:
 
 ```typescript
-// Publishing an update with previous state for change detection
-await this.eventBusPublisher.publish({
-  entityType: 'user',
-  eventType: 'updated',
-  data: {
-    id: 'user-123',
-    email: 'newemail@example.com',
-    name: 'John Doe',
-    status: 'active'
-  },
-  prevData: {
-    id: 'user-123', 
-    email: 'oldemail@example.com',
-    name: 'John Doe',
-    status: 'inactive'
-  },
-  actor: { id: 'admin-1', type: 'user' },
-});
+try {
+  await this.eventBusPublisher.publish({
+    entityType: '',  // Invalid: empty string
+    eventType: 'created',
+    data: resourceData,
+    actor: actor.actor
+  });
+} catch (error) {
+  // Error: "entityType is required and cannot be empty"
+  console.error('Publishing failed:', error.message);
+}
 ```
 
-Subscribers can access both current data via `eventPayload.data` and previous data via `eventPayload.prev_data` to determine what specifically changed:
+## Consuming Events
+
+Event subscribers use the `@SubscribeTo` decorator to declaratively subscribe to events with automatic queue management and retry handling.
+
+### Interface Definitions
+
+```typescript
+// Subscription options
+interface SubscribeToOptions {
+  domain: '*' | '#' | string;     // Domain(s) to subscribe to
+  entity: '*' | '#' | string;     // Entity type(s) to subscribe to
+  action: EventType;              // Action(s) to subscribe to (supports wildcards)
+  queue?: string;                 // Custom queue name (optional)
+  // Used when you'd like to register a 2nd+ handler for the same event
+  queueOptions?: Record<string, any>;      // Additional queue options (optional)
+  errorQueueOptions?: Record<string, any>; // Error queue configuration (optional)
+}
+
+// Event Type
+type EventType = 'created' | 'read' | 'updated' | 'deleted' | '*';
+
+// Event headers received by subscribers
+interface EventHeaders {
+  event_uid: string;
+  entity_type: string;
+  event_type: string;
+  timestamp: string;
+  source_service: string;  // Core, availability, permissionsmanager, etc
+  trace_id: string;        // Useful for consistent logging
+  actor: Actor;
+  version: string;
+}
+
+// Event payload wrapper
+interface EventPayload<T = unknown> {
+  data: T;
+  prev_data?: T;
+  schema_ref: string;
+}
+```
+
+### Method Signature
+
+All subscriber methods must follow this exact signature:
+
+```typescript
+async methodName(
+  actor: AuthorizationPayloadEntity,  // Authentication context
+  event: EventPayload<T>,             // Typed event data
+  headers: EventHeaders               // Event metadata
+): Promise<void>
+```
+
+### Basic Subscription
+
+The `SubscribeTo` decorator should be called adjacently to the handler function in order to be able to use metadata-related decorators such as `ApiMaxDuration`.
 
 ```typescript
 @SubscribeTo({
-  domain: 'users',
-  entity: 'user', 
-  action: 'updated',
+  domain: 'scheduling',
+  entity: 'resource',
+  action: 'created'
 })
-async handleUserUpdated(
-  auth: AuthorizationPayloadEntity,
-  eventPayload: EventPayload<UserData>,
-  headers: EventHeaders,
+async handleResourceCreated(
+  actor: AuthorizationPayloadEntity,
+  event: EventPayload<ResourceData>,
+  headers: EventHeaders
 ): Promise<void> {
-  const currentUser = eventPayload.data;
-  const previousUser = eventPayload.prev_data;
-  
-  if (previousUser) {
-    // Check if email changed
-    if (currentUser.email !== previousUser.email) {
-      await this.handleEmailChange(currentUser.id, previousUser.email, currentUser.email);
-    }
-    
-    // Check if status changed
-    if (currentUser.status !== previousUser.status) {
-      await this.handleStatusChange(currentUser.id, previousUser.status, currentUser.status);
-    }
+  // do something...
+}
+```
+
+### Wildcard Patterns
+
+The system supports wildcard patterns for flexible subscriptions:
+
+```typescript
+// Single word wildcard (*)
+@SubscribeTo({
+  domain: 'scheduling',
+  entity: '*',      // All entities in scheduling domain
+  action: 'created'
+})
+```
+
+### Default Retry Policy
+
+Events have a default retry policy consisting of:
+
+* 1 retry attempt; i.e., if an event fails and the error is not a `NonRetryableError` it will be tried one more time before being routed to the error queue
+* 10 seconds delay between retries; i.e., on event failure there will be a period of 10 seconds before the event is retried
+
+### Custom Retry Parameters
+
+```typescript
+// Custom retry configuration example
+@SubscribeTo({
+  domain: 'scheduling',
+  entity: 'resource',
+  action: 'created',
+  retry: {
+    count: 3,      // Override default max retries (default: 1)
+    delayMs: 30000 // Override default delay (default: 10000ms)
   }
-  
-  // Always handle the update
-  await this.processUserUpdate(currentUser);
-}
-```
-
-**Benefits:**
-- **Selective Processing**: Only react to meaningful changes
-- **Audit Trails**: Track what specifically changed
-- **Performance**: Avoid unnecessary processing when only irrelevant fields changed
-- **Business Logic**: Implement field-specific change handlers
-
-### Actor Information
-
-The `actor` field describes who or what triggered the event:
-
-```typescript
-// User-triggered event
-actor: {
-  id: 'user-123',
-  type: 'user',
-  email: 'user@example.com',
-  name: 'John Doe'
-}
-
-// System-triggered event
-actor: {
-  id: 'system',
-  type: 'system',
-  name: 'Automated Process'
-}
-```
-
-## Subscribing to Events
-
-### Standard Event Subscription
-
-Use the `@SubscribeTo` decorator for structured events:
-
-```typescript
-import { SubscribeTo } from '@vcita/event-bus-nestjs';
-
-@Injectable()
-export class MySubscriber {
-  @SubscribeTo({
-    domain: 'payments',           // Domain to listen to
-    entity: 'product',            // Entity type to listen to
-    action: 'created',            // Action to listen to
-    queue: 'my-custom-queue',     // Optional: custom queue name
-    retry: {                      // Optional: retry configuration
-      count: 5,
-      delayMs: 10000
-    }
-  })
-  async handleProductCreated(
-    auth: AuthorizationPayloadEntity,  // Authentication context
-    event: EventPayload<ProductData>,  // Event data
-    headers: EventHeaders,             // Event metadata
-  ): Promise<void> {
-    // Your business logic here
+})
+async handleEvent(
+  actor: AuthorizationPayloadEntity,
+  event: EventPayload<any>,
+  headers: EventHeaders
+): Promise<void> {
+  // This subscriber will retry up to 3 times with 30-second delays
+  try {
+    // Business logic
+  } catch (error) {
+    // Standard error handling - framework will handle retry logic
+    throw error;
   }
 }
 ```
 
-### Wildcard Subscriptions
+**Note:** Changing retry parameters (`retry.count` or `retry.delayMs`) for an existing subscriber requires deletion and recreation of the subscriber's retry infrastructure queues in RabbitMQ. This is because TTL and dead letter exchange configurations are set at queue creation time and cannot be modified.
 
-You can use wildcards to subscribe to multiple events:
+### Error Handling
 
 ```typescript
-@Injectable()
-export class ProductSubscriber {
-  // Listen to all product events
-  @SubscribeTo({
-    domain: 'payments',
-    entity: 'product',
-    action: '*',
-  })
-  async handleAllProductEvents(
-    auth: AuthorizationPayloadEntity,
-    event: EventPayload<any>,
-    headers: EventHeaders,
-  ): Promise<void> {
-    this.logger.log(`Product event: ${headers.event_type}`);
-  }
+import { NonRetryableError } from '@vcita/event-bus-nestjs';
 
-  // Listen to all entities in payments domain
-  @SubscribeTo({
-    domain: 'payments',
-    entity: '*',
-    action: 'created',
-  })
-  async handleAllPaymentCreations(
-    auth: AuthorizationPayloadEntity,
-    event: EventPayload<any>,
-    headers: EventHeaders,
-  ): Promise<void> {
-    this.logger.log(`Created in payments: ${headers.entity_type}`);
-  }
-}
+// For permanent failures that should skip retry
+throw new NonRetryableError(
+  'Invalid event schema',
+  originalError
+);
 ```
 
-### Legacy Event Subscription
+**Important**: All errors thrown from subscriber methods that are **not** of type `NonRetryableError` will be automatically rethrown internally as `RetryError` instances and will be retried according to the TTL-based retry policy. This means:
 
-For backward compatibility with legacy events:
+* If you throw a `NonRetryableError`, the message goes directly to the dead letter queue.
+* If you throw any other error type (including standard `Error`, `TypeError`, etc.), it will be automatically converted to a `RetryError` and retried.
+* Only explicitly throw `NonRetryableError` when you're certain the error is permanent and should not be retried.
+
+### Queue Configuration
+
+Queues are automatically named using the pattern: `{appName}.{domain}.{entity}.{action}`.
 
 ```typescript
+// Custom queue name and options
+@SubscribeTo({
+  domain: 'scheduling',
+  entity: 'resource',
+  action: 'created',
+  queue: 'custom-resource-processor', // Override default naming
+  queueOptions: {
+    // Optional: RabbitMQ queue arguments
+  },
+  errorQueueOptions: {
+    // Optional: RabbitMQ DLQ arguments
+  }
+})
+```
+
+## Legacy Event Subscription
+
+The event bus provides backward compatibility support for legacy event systems through the `@LegacySubscribeTo` decorator. This feature allows services to subscribe to existing legacy topic exchanges without requiring the structured domain/entity/action classification used by standard events.
+
+This decorator is especially useful for consuming events produced by the model-change triggering mechanism used by the core and vcita services (`vcita.model_updates` exchange).
+
+### Key Differences from Standard Events
+
+* **No Event Structure Requirements**: Legacy events can contain any JSON payload without requiring `data` and `schema_ref` fields
+* **No Actor Context**: Legacy events don't require actor authentication context in headers
+* **Direct Routing Keys**: Use raw routing key patterns instead of domain/entity/action classification
+* **Simplified Method Signature**: Handlers receive `(payload: unknown, headers: any)` instead of the standard format
+* **Legacy Exchange**: Connects to configured legacy exchanges (default: `vcita.model_updates`)
+
+Subscribers can use both standard decorators and legacy decorators in the same class.
+
+### Method Signature
+
+All legacy subscriber methods must follow this exact signature:
+
+```typescript
+async methodName(
+  payload: unknown,  // Raw event payload (any JSON structure)
+  headers: any       // Raw message headers (any structure)
+): Promise<void>
+```
+
+### Legacy Subscriber Implementation
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { InfraLoggerService } from '@vcita/infra-nestjs';
 import { LegacySubscribeTo } from '@vcita/event-bus-nestjs';
 
 @Injectable()
-export class LegacySubscriber {
+export class LegacyApplicationSubscriber {
+  // Legacy subscription with custom queue name and retry config
   @LegacySubscribeTo({
-    routingKey: 'legacy.orders.*',    // RabbitMQ routing key pattern
-    retry: { count: 1, delayMs: 10000 }
+    routingKey: 'model_change.application',
+    queue: 'numbers_manager.model_changes.application', // default is legacy.{service_name}.{routing_key}
+    retry: {
+      count: 3,      // Custom retry count
+      delayMs: 30000 // Custom retry delay
+    }
   })
-  async handleLegacyOrder(
-    payload: unknown,  // Raw event payload
-    headers: any,      // Raw AMQP headers
-  ): Promise<void> {
-    this.logger.log(`Legacy order: ${JSON.stringify(payload)}`);
+  async handleLegacyApplicationEvent(payload: unknown, headers: any): Promise<void> {
+    // Handling logic
   }
 }
 ```
 
-### Method Signatures
+### Queue Naming Convention
 
-**Standard Subscription Method:**
-```typescript
-async methodName(
-  auth: AuthorizationPayloadEntity,     // Actor context with authentication
-  currentData: EventPayload<T>,         // Current entity state
-  previousData: EventPayload<T>,        // Previous entity state (undefined for 'created' events)
-  headers: EventHeaders,                // Event metadata
-): Promise<void>
-```
+Legacy subscriptions create queues with a specific naming pattern and isolated per-subscriber retry infrastructure:
 
-**Legacy Subscription Method:**
+* **Main Queue**: `{queue} || legacy.{appName}.{routingKey}`
+* **Retry Exchange**: `{main_queue_name}.retry`
+* **Retry Queue**: `{main_queue_name}.retry` (with TTL)
+* **Requeue Exchange**: `{main_queue_name}.requeue`
+* **Error Exchange**: `{main_queue_name}.error`
+* **Error Queue**: `{main_queue_name}.error`
+
+**Note:** Changing retry parameters (`retry.count` or `retry.delayMs`) for an existing subscriber requires deletion and recreation of the subscriber's retry infrastructure queues in RabbitMQ. This is because TTL and dead letter exchange configurations are set at queue creation time and cannot be modified.
+
+### Interface Definitions
+
 ```typescript
-async methodName(
-  payload: unknown,  // Raw event payload
-  headers: any,      // Raw AMQP headers
-): Promise<void>
+interface LegacySubscribeToOptions {
+  routingKey: string;             // RabbitMQ routing key pattern
+  queue?: string;                 // Custom queue name
+  retry?: {                       // Retry configuration
+    count?: number;
+    delayMs?: number;
+  };
+  queueOptions?: object;          // Queue options
+  errorQueueOptions?: object;     // Error queue options
+}
 ```
 
 ## Event Structure
@@ -550,198 +663,192 @@ After all retries are exhausted, messages are sent to error queues for manual in
 
 ## Testing
 
-### Test Environment Setup
+### Publisher Testing
 
-In test environments (`NODE_ENV=test`), the module automatically mocks AMQP connections:
+#### Setup and Success Cases
 
 ```typescript
-// my.service.spec.ts
-import { Test } from '@nestjs/testing';
-import { PublisherModule, EventBusPublisher } from '@vcita/event-bus-nestjs';
+describe('ResourceService', () => {
+  const mockEventBusPublisher = {
+    publish: jest.fn().mockResolvedValue(undefined),
+  } as unknown as jest.Mocked<EventBusPublisher>;
 
-describe('MyService', () => {
-  let service: MyService;
-  let eventBusPublisher: EventBusPublisher;
-
-  beforeEach(async () => {
-    const module = await Test.createTestingModule({
-      imports: [PublisherModule], // No configuration needed in tests
-      providers: [MyService],
-    }).compile();
-
-    service = module.get<MyService>(MyService);
-    eventBusPublisher = module.get<EventBusPublisher>(EventBusPublisher);
+  beforeEach(() => {
+    jest.clearAllMocks();
+    service = new ResourceService(/* deps */, mockEventBusPublisher);
   });
 
-  it('should publish created events', async () => {
-    const user = await service.createUser(userData, actor);
+  it('should publish event on successful creation', async () => {
+    await service.createResource(validDto, mockActor);
 
-    // Verify the created event was published (no prevData needed)
-    expect(eventBusPublisher.publish).toHaveBeenCalledWith({
-      entityType: 'user',
+    expect(mockEventBusPublisher.publish).toHaveBeenCalledWith({
+      entityType: 'resource',
       eventType: 'created',
-      data: user,
-      actor: actor,
-    });
-  });
-
-  it('should publish updated events with prevData', async () => {
-    const oldUser = { id: '123', name: 'Old Name', email: 'old@example.com' };
-    const updatedUser = { id: '123', name: 'New Name', email: 'new@example.com' };
-    
-    await service.updateUser('123', { name: 'New Name' }, actor);
-
-    // Verify the updated event was published with required prevData
-    expect(eventBusPublisher.publish).toHaveBeenCalledWith({
-      entityType: 'user',
-      eventType: 'updated',
-      data: updatedUser,
-      prevData: oldUser, // Required for updated events
-      actor: actor,
+      data: expect.any(Object),
+      actor: mockActor,
     });
   });
 });
 ```
 
-### Disabling Event Bus
+#### Failure Cases
 
-You can disable the event bus for testing by setting:
+```typescript
+it('should NOT publish event when operation fails', async () => {
+  jest.spyOn(repository, 'create').mockRejectedValue(new Error('Validation failed'));
+
+  await expect(service.createResource(invalidDto, mockActor)).rejects.toThrow();
+  expect(mockEventBusPublisher.publish).not.toHaveBeenCalled();
+});
+```
+
+**Key Patterns**: Mock publisher, verify `publish` called on success, verify `publish` NOT called on failure.
+
+### Subscriber Testing
+
+Disable event bus subscriptions in test environments:
 
 ```bash
 DISABLE_EVENT_BUS=true
+```
+
+This prevents actual queue creation and message consumption during unit tests while keeping the decorator syntax intact.
+
+#### Testing Event Subscribers
+
+```typescript
+// Mock decorator before imports
+jest.mock('@vcita/event-bus-nestjs/decorators/subscribe-to.decorator', () => ({
+  SubscribeTo: () => () => {},
+}));
+
+describe('ResourceSubscriber', () => {
+  let subscriber: ResourceSubscriber;
+  let mockService: jest.Mocked<SomeService>;
+
+  beforeEach(() => {
+    mockService = { someMethod: jest.fn() } as any;
+    subscriber = new ResourceSubscriber(mockService);
+    jest.clearAllMocks();
+  });
+
+  it('should handle event and call business logic', async () => {
+    const mockAuth = { actor: { uid: 'user-123' } } as any;
+    const mockEvent = { data: { uid: 'resource-123' }, schema_ref: 'resource-v1' };
+    const mockHeaders = { event_type: 'created', event_uid: 'evt-123' } as any;
+
+    await subscriber.handleResourceEvent(mockAuth, mockEvent, mockHeaders);
+
+    expect(mockService.someMethod).toHaveBeenCalledWith('resource-123', 'resource');
+  });
+
+  it('should propagate errors for retry mechanism', async () => {
+    mockService.someMethod.mockRejectedValue(new Error('Service failed'));
+
+    await expect(subscriber.handleResourceEvent(mockAuth, mockEvent, mockHeaders))
+      .rejects.toThrow('Service failed');
+  });
+});
+```
+
+**Key Patterns**: Mock decorator, test handler methods directly, verify business logic calls, let errors bubble up for retry.
+
+## Migration to v2.0.0
+
+Introducing the following changes:
+
+**You must note the breaking changes and fix your code accordingly!**
+Failing to do so would cause errors.
+
+### Breaking Changes
+
+* **Publisher Validation**: `prevData` is now **required** for `updated` events
+* **Event Type Validation**: Event type must be one of: `created`, `read`, `updated`, `deleted`
+* **EventBuilder API**: Parameter order changed to `buildPayload(entityType, data, prevData?, version?)`
+* **Subscriber Method Signatures**: Methods now receive `(auth, currentData, previousData, headers)`
+
+### Added Features
+
+* **Change Detection**: Added `prev_data` field to event payload structure
+* **Enhanced Validation**: Stricter validation with clear error messages
+
+### Migration Steps
+
+#### 1. Add `prevData` to Updated Events
+
+**Before:**
+```typescript
+await this.eventBusPublisher.publish({
+  entityType: 'entity',
+  eventType: 'updated',
+  data: updatedEntity,
+  actor: this.getCurrentActor(),
+});
+```
+
+**After:**
+```typescript
+const currentEntity = await this.entityRepository.findById(entityId);
+const updatedEntity = await this.entityRepository.update(entityId, updates);
+
+await this.eventBusPublisher.publish({
+  entityType: 'entity',
+  eventType: 'updated',
+  data: updatedEntity,
+  prevData: currentEntity, // ✅ Required!
+  actor: this.getCurrentActor(),
+});
+```
+
+#### 2. Update EventBuilder Usage (if used)
+
+**Before:**
+```typescript
+EventBuilder.buildPayload(entityData, 'entity', 'v1', prevEntityData);
+```
+
+**After:**
+```typescript
+EventBuilder.buildPayload('entity', entityData, prevEntityData, 'v1');
+```
+
+#### 3. Update Subscriber Method Signatures
+
+**Before:**
+```typescript
+async handleEntityUpdated(
+  auth: AuthorizationPayloadEntity,
+  event: EventPayload<EntityData>,
+  headers: EventHeaders,
+): Promise<void>
+```
+
+**After:**
+```typescript
+async handleEntityUpdated(
+  auth: AuthorizationPayloadEntity,
+  entityData: EventPayload<EntityData>,    // Current state
+  prevEntityData: EventPayload<EntityData>, // Previous state
+  headers: EventHeaders,
+): Promise<void>
+```
+
+#### 4. Update Tests
+
+```typescript
+expect(eventBusPublisher.publish).toHaveBeenCalledWith({
+  entityType: 'entity',
+  eventType: 'updated',
+  data: updatedEntity,
+  prevData: originalEntity, // ✅ Include in test expectations
+  actor: mockActor,
+});
 ```
 
 ## Environment Variables
 
 See the [Configuration](#configuration) section for detailed information about all environment variables.
 
-### Testing Variables
-
-```bash
-# Disable event bus functionality (useful for testing)
-DISABLE_EVENT_BUS=true
-```
-
-## Advanced Usage
-
-### Custom Queue Configuration
-
-```typescript
-@SubscribeTo({
-  domain: 'payments',
-  entity: 'product',
-  action: 'created',
-  queue: 'my-custom-queue',
-  queueOptions: {
-    durable: true,
-    arguments: {
-      'x-message-ttl': 3600000, // 1 hour TTL
-    },
-  },
-  errorQueueOptions: {
-    durable: true,
-    arguments: {
-      'x-message-ttl': 86400000, // 24 hour TTL for error queue
-    },
-  },
-})
-async handleProductCreated(/* ... */) {
-  // Your logic
-}
-```
-
-### Multiple Event Handlers
-
-```typescript
-@Injectable()
-export class ProductSubscriber {
-  @SubscribeTo({
-    domain: 'payments',
-    entity: 'product',
-    action: 'created',
-  })
-  async handleProductCreated(/* ... */) {
-    // Handle creation
-  }
-
-  @SubscribeTo({
-    domain: 'payments',
-    entity: 'product',
-    action: 'updated',
-  })
-  async handleProductUpdated(/* ... */) {
-    // Handle updates
-  }
-
-  @SubscribeTo({
-    domain: 'payments',
-    entity: 'product',
-    action: 'deleted',
-  })
-  async handleProductDeleted(/* ... */) {
-    // Handle deletion
-  }
-}
-```
-
-## API Reference
-
-### EventBusPublisher
-
-```typescript
-class EventBusPublisher<T = unknown> {
-  /**
-   * Publish an event to the event bus
-   */
-  async publish(options: PublishEventOptions<T>): Promise<void>
-}
-```
-
-### PublishEventOptions
-
-```typescript
-interface PublishEventOptions<T = unknown> {
-  entityType: string;    // Entity type (e.g., 'user', 'product')
-  eventType: EventType;  // Event type (e.g., 'created', 'updated')
-  data: T;               // Event payload
-  prevData?: T;          // Previous entity state (required for 'updated', optional for others)
-  actor: Actor;          // Actor information
-  version?: string;      // Schema version (default: 'v1')
-  domain?: string;       // Domain override
-}
-```
-
-### SubscribeTo Options
-
-```typescript
-interface SubscribeToOptions {
-  domain: string | '*';           // Domain to listen to
-  entity: string | '*';           // Entity type to listen to
-  action: EventType;              // Action to listen to
-  queue?: string;                 // Custom queue name
-  retry?: {                       // Retry configuration
-    count?: number;
-    delayMs?: number;
-  };
-  queueOptions?: object;          // Queue options
-  errorQueueOptions?: object;     // Error queue options
-}
-```
-
-### LegacySubscribeTo Options
-
-```typescript
-interface LegacySubscribeToOptions {
-  routingKey: string;             // RabbitMQ routing key pattern
-  queue?: string;                 // Custom queue name
-  retry?: {                       // Retry configuration
-    count?: number;
-    delayMs?: number;
-  };
-  queueOptions?: object;          // Queue options
-  errorQueueOptions?: object;     // Error queue options
-}
-```
 
 ## License
 
