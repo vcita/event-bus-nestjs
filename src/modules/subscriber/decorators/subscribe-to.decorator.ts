@@ -80,7 +80,10 @@ export function SubscribeTo(options: SubscribeToOptions) {
       amqpMsg: ConsumeMessage,
     ): Promise<void> {
       const headers = amqpMsg.properties.headers || {};
-      const actor = plainToActor(headers.actor) as ActorEntity;
+      // Parse actor from JSON string if needed (headers come as strings from RabbitMQ)
+      const actorData =
+        typeof headers.actor === 'string' ? JSON.parse(headers.actor) : headers.actor;
+      const actor = plainToActor(actorData) as ActorEntity;
       const auth = new AuthorizationPayloadEntity(null, actor);
       return originalEventHandler.call(this, auth, event, headers);
     };
