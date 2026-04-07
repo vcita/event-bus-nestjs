@@ -48,6 +48,28 @@ export class RetryError extends EventError {
   }
 }
 
+/**
+ * Get the current attempt number for a message based on RabbitMQ's x-death headers.
+ * Returns 1 for the first attempt (no prior failures), 2 after one retry, etc.
+ *
+ * @param headers - The message headers (from amqpMsg.properties.headers or EventHeaders)
+ * @returns The current attempt number (1-based)
+ */
+export function getCurrentAttemptCount(headers: Record<string, any>): number {
+  const deadLetterHistory = headers?.['x-death'] || [];
+  if (!Array.isArray(deadLetterHistory) || deadLetterHistory.length === 0) {
+    return 1;
+  }
+
+  const originalSubscriberQueue = headers?.['x-first-death-queue'] || '';
+  const originalQueueDeathEntry = deadLetterHistory.find(
+    (deathEntry: any) => deathEntry.queue === originalSubscriberQueue,
+  );
+  const originalQueueDeathCount = originalQueueDeathEntry?.count || 0;
+
+  return originalQueueDeathCount + 1;
+}
+
 export const RetryHeaders = {
   RETRY_LATEST_TIMESTAMP: 'x-retry-latest-timestamp',
   RETRY_ORIGINAL_ERROR: 'x-retry-original-error',
