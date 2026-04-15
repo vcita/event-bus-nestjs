@@ -26,5 +26,5 @@ export { EventBusConfig } from './interfaces/event-bus-config.interface';
 export { SubscribeTo } from './modules/subscriber/decorators/subscribe-to.decorator';
 export { LegacySubscribeTo } from './modules/subscriber/decorators/legacy-subscribe-to.decorator';
 
-// Error exports
-export { NonRetryableError } from './utils/event-retry-handler';
+// Error & retry exports
+export { NonRetryableError, getCurrentAttemptCount } from './utils/event-retry-handler';

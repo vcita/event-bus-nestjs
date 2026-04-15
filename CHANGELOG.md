@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 # Releases 
 
+## 2.0.2 (2026-04-15)
+### Added
+- **Retry Awareness**: Exported `getCurrentAttemptCount` utility from the package, allowing subscribers to determine the current retry attempt number (e.g., to publish failure events only after all retries are exhausted)
+
 ## 2.0.1 (2026-02-04)
 ### Fixed
 - **Actor Deserialization**: Fixed `@SubscribeTo` decorator to properly parse actor from RabbitMQ headers. Actor was being passed as JSON string to `plainToActor()` instead of parsed object, causing `actor.uid` and `actor.getBelongTo()` to return `undefined`.
